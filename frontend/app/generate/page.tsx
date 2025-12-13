@@ -55,9 +55,18 @@ function WorkflowCanvas() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(state.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(state.edges);
-  
+
+  // Track latest state to avoid stale closure issues
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   // Track previous state to prevent unnecessary updates
-  const prevStateRef = useRef<{ nodes: typeof state.nodes; edges: typeof state.edges }>({
+  const prevStateRef = useRef<{
+    nodes: typeof state.nodes;
+    edges: typeof state.edges;
+  }>({
     nodes: state.nodes,
     edges: state.edges,
   });
@@ -67,12 +76,12 @@ function WorkflowCanvas() {
     // Only update if state actually changed (by reference)
     const nodesChanged = prevStateRef.current.nodes !== state.nodes;
     const edgesChanged = prevStateRef.current.edges !== state.edges;
-    
+
     if (nodesChanged) {
       setNodes(state.nodes);
       prevStateRef.current.nodes = state.nodes;
     }
-    
+
     if (edgesChanged) {
       setEdges(state.edges);
       prevStateRef.current.edges = state.edges;
@@ -112,6 +121,9 @@ function WorkflowCanvas() {
       analysis: AnalysisResponse,
       outline: OutlineResponse
     ) => {
+      // Use ref to get latest state (avoids stale closure)
+      const currentState = stateRef.current;
+
       console.log("handleOutlineComplete called");
       updateGenerationState({ transcripts, analysis, outline });
       completeNode("outline", { transcripts, analysis, outline });
@@ -125,8 +137,8 @@ function WorkflowCanvas() {
           isExpanded: true,
           isCompleted: false,
           isLoading: false,
-          topic: state.generationState.topic,
-          format: state.generationState.format || PodcastFormat.SINGLE_HOST,
+          topic: currentState.topic,
+          format: currentState.format || PodcastFormat.SINGLE_HOST,
           outline,
           onComplete: handleScriptComplete,
           onExpand: () => expandNode("script"),
@@ -135,8 +147,6 @@ function WorkflowCanvas() {
       );
     },
     [
-      state.generationState.topic,
-      state.generationState.format,
       updateGenerationState,
       completeNode,
       addNode,
@@ -149,18 +159,21 @@ function WorkflowCanvas() {
   // References node completion handler
   const handleReferencesComplete = useCallback(
     (selectedVideos: VideoInfo[]) => {
+      // Use ref to get latest state (avoids stale closure)
+      const currentState = stateRef.current;
+
       console.log(
         "handleReferencesComplete called with",
         selectedVideos.length,
         "videos"
       );
+      console.log("Using state from ref:", {
+        topic: currentState.topic,
+        format: currentState.format,
+      });
+
       updateGenerationState({ selectedVideos });
       completeNode("references", { videos: selectedVideos });
-
-      console.log("Adding outline node with state:", {
-        topic: state.generationState.topic,
-        format: state.generationState.format,
-      });
 
       // Add Outline node
       addNode(
@@ -171,8 +184,8 @@ function WorkflowCanvas() {
           isExpanded: true,
           isCompleted: false,
           isLoading: false,
-          topic: state.generationState.topic,
-          format: state.generationState.format || PodcastFormat.SINGLE_HOST,
+          topic: currentState.topic,
+          format: currentState.format || PodcastFormat.SINGLE_HOST,
           videos: selectedVideos,
           onComplete: handleOutlineComplete,
           onExpand: () => expandNode("outline"),
@@ -181,8 +194,6 @@ function WorkflowCanvas() {
       );
     },
     [
-      state.generationState.topic,
-      state.generationState.format,
       updateGenerationState,
       completeNode,
       addNode,
@@ -210,6 +221,7 @@ function WorkflowCanvas() {
           isCompleted: false,
           isLoading: false,
           topic,
+          format, // Pass format along too
           onComplete: handleReferencesComplete,
           onExpand: () => expandNode("references"),
           onCollapse: () => collapseNode("references"),
@@ -262,7 +274,7 @@ function WorkflowCanvas() {
 
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <EditModeIndicator show={hasEditedNode} />
+      {/* <EditModeIndicator show={hasEditedNode} /> */}
       <ConfettiEffect trigger={showConfetti} />
       <ReactFlow
         nodes={nodes}

@@ -1,12 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateScript } from '@/lib/api';
-import { PodcastFormat } from '@/lib/types';
-import type { OutlineResponse, ScriptResponse } from '@/lib/types';
-import { Loader2, User, Users } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { generateScript } from "@/lib/api";
+import { PodcastFormat } from "@/lib/types";
+import type { OutlineResponse, ScriptResponse } from "@/lib/types";
+import { Loader2, User, Users } from "lucide-react";
 
 interface ScriptStepProps {
   topic: string;
@@ -16,7 +22,13 @@ interface ScriptStepProps {
   onBack: () => void;
 }
 
-export function ScriptStep({ topic, format, outline, onNext, onBack }: ScriptStepProps) {
+export function ScriptStep({
+  topic,
+  format,
+  outline,
+  onNext,
+  onBack,
+}: ScriptStepProps) {
   const [loading, setLoading] = useState(true);
   const [script, setScript] = useState<ScriptResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +40,7 @@ export function ScriptStep({ topic, format, outline, onNext, onBack }: ScriptSte
         const result = await generateScript(outline, topic, format);
         setScript(result);
       } catch (err) {
-        setError('Failed to generate script. Please try again.');
+        setError("Failed to generate script. Please try again.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -82,9 +94,9 @@ export function ScriptStep({ topic, format, outline, onNext, onBack }: ScriptSte
               <div>
                 <CardTitle>Podcast Script</CardTitle>
                 <CardDescription>
-                  {format === PodcastFormat.TWO_HOSTS
-                    ? 'Conversational script with two hosts'
-                    : 'Single narrator script'}
+                  {format === PodcastFormat.MULTI_HOST
+                    ? "Conversational script with two hosts"
+                    : "Single narrator script"}
                 </CardDescription>
               </div>
               <div className="text-sm text-gray-500">
@@ -94,12 +106,12 @@ export function ScriptStep({ topic, format, outline, onNext, onBack }: ScriptSte
           </CardHeader>
           <CardContent>
             <div className="bg-gray-50 rounded-lg p-6 max-h-96 overflow-y-auto">
-              {format === PodcastFormat.TWO_HOSTS ? (
+              {format === PodcastFormat.MULTI_HOST ? (
                 <div className="space-y-4">
                   {script.segments.map((segment, idx) => (
                     <div key={idx} className="flex gap-3">
                       <div className="flex-shrink-0">
-                        {segment.speaker === 'HOST_1' ? (
+                        {segment.speaker === "HOST_1" ? (
                           <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm">
                             H1
                           </div>
@@ -111,7 +123,7 @@ export function ScriptStep({ topic, format, outline, onNext, onBack }: ScriptSte
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-700 mb-1">
-                          {segment.speaker === 'HOST_1' ? 'Host 1' : 'Host 2'}
+                          {segment.speaker === "HOST_1" ? "Host 1" : "Host 2"}
                         </p>
                         <p className="text-sm text-gray-600">{segment.text}</p>
                       </div>
@@ -120,7 +132,9 @@ export function ScriptStep({ topic, format, outline, onNext, onBack }: ScriptSte
                 </div>
               ) : (
                 <div className="prose prose-sm max-w-none">
-                  <p className="whitespace-pre-wrap text-gray-700">{script.full_script}</p>
+                  <p className="whitespace-pre-wrap text-gray-700">
+                    {script.full_script}
+                  </p>
                 </div>
               )}
             </div>
