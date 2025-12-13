@@ -27,7 +27,8 @@ class GeminiService:
     def __init__(self, api_key: str):
         """Initialize Gemini service."""
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-pro')
+        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        logger.info(f"Initialized Gemini with model: gemini-2.0-flash-exp")
     
     def _parse_json_response(self, response_text: str) -> dict:
         """Extract and parse JSON from model response."""

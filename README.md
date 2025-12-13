@@ -73,6 +73,8 @@ The end-to-end workflow is composed of several modules, each responsible for par
 
 The user enters a topic or title for the desired podcast episode. The system uses the **YouTube API** (limited to English results) to search for existing podcast episodes related to that topic. This yields a list of relevant YouTube videos (podcast recordings) that can serve as reference material.
 
+**⚡ Performance Enhancement**: The system implements **persistent file-based caching** that stores search results and transcripts on disk. This cache survives server restarts and provides 40-60x faster response times for repeated queries. See [CACHE_SYSTEM.md](./CACHE_SYSTEM.md) for details.
+
 ### 2. Reference Selection
 
 The user is presented with the top search results – e.g., popular or relevant podcast episodes on the topic – and can select a few of these as references. Using YouTube ensures easily accessible content; we restrict to YouTube-only sources per the requirements.

@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1 import discovery, transcripts, analysis, outline, script, tts
+from app.api.v1.endpoints import cache as cache_endpoints
 
 # Create FastAPI app
 app = FastAPI(
@@ -28,6 +29,7 @@ app.include_router(analysis.router, prefix="/api/v1", tags=["analysis"])
 app.include_router(outline.router, prefix="/api/v1", tags=["outline"])
 app.include_router(script.router, prefix="/api/v1", tags=["script"])
 app.include_router(tts.router, prefix="/api/v1", tags=["tts"])
+app.include_router(cache_endpoints.router, prefix="/api/v1/cache", tags=["cache"])
 
 
 @app.get("/")

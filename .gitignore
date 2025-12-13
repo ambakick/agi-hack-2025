@@ -64,6 +64,9 @@ Thumbs.db
 audio_output/
 video_output/
 
+# Cache files (optional - commit if you want shared cache)
+backend/cache/
+
 # Temporary files
 *.tmp
 *.temp
