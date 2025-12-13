@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { NodeProps } from 'reactflow';
-import { NodeWrapper } from './NodeWrapper';
-import { Button } from '@/components/ui/button';
-import { WorkflowNodeData } from '@/lib/workflowState';
-import { generateScript } from '@/lib/api';
-import { PodcastFormat } from '@/lib/types';
-import type { OutlineResponse, ScriptResponse } from '@/lib/types';
-import { ScrollText, Loader2 } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { NodeProps } from "reactflow";
+import { NodeWrapper } from "./NodeWrapper";
+import { Button } from "@/components/ui/button";
+import { WorkflowNodeData } from "@/lib/workflowState";
+import { generateScript } from "@/lib/api";
+import { PodcastFormat } from "@/lib/types";
+import type { OutlineResponse, ScriptResponse } from "@/lib/types";
+import { ScrollText, Loader2 } from "lucide-react";
 
 interface ScriptNodeProps extends NodeProps {
   data: WorkflowNodeData & {
@@ -23,11 +23,19 @@ interface ScriptNodeProps extends NodeProps {
 
 export function ScriptNode({ id, data }: ScriptNodeProps) {
   const [loading, setLoading] = useState(false);
-  const [script, setScript] = useState<ScriptResponse | null>(data.script || null);
+  const [script, setScript] = useState<ScriptResponse | null>(
+    data.script || null
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (data.isExpanded && !script && data.outline && data.topic && data.format) {
+    if (
+      data.isExpanded &&
+      !script &&
+      data.outline &&
+      data.topic &&
+      data.format
+    ) {
       generateScriptContent();
     }
   }, [data.isExpanded]);
@@ -38,10 +46,14 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
     try {
       setLoading(true);
       setError(null);
-      const result = await generateScript(data.outline, data.topic, data.format);
+      const result = await generateScript(
+        data.outline,
+        data.topic,
+        data.format
+      );
       setScript(result);
     } catch (err) {
-      setError('Failed to generate script. Please try again.');
+      setError("Failed to generate script. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -56,7 +68,7 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
 
   const summary = script
     ? `Script generated (~${Math.round(script.total_duration_seconds / 60)}min)`
-    : 'Generate script';
+    : "Generate script";
 
   return (
     <NodeWrapper
@@ -76,28 +88,32 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-700 mb-1">
+            <p className="text-sm font-medium text-gray-200 mb-1">
               Generating podcast script with Gemini...
             </p>
-            <p className="text-xs text-gray-500">This may take 1-2 minutes</p>
+            <p className="text-xs text-gray-400">This may take 1-2 minutes</p>
           </div>
         </div>
       ) : script ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-gray-400">
             <span>
-              {data.format === PodcastFormat.MULTI_HOST ? 'Two-host dialogue' : 'Single narrator'}
+              {data.format === PodcastFormat.MULTI_HOST
+                ? "Two-host dialogue"
+                : "Single narrator"}
             </span>
-            <span>~{Math.round(script.total_duration_seconds / 60)} minutes</span>
+            <span>
+              ~{Math.round(script.total_duration_seconds / 60)} minutes
+            </span>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 max-h-80 overflow-y-auto">
+          <div className="bg-gray-700 rounded-lg p-4 max-h-80 overflow-y-auto">
             {data.format === PodcastFormat.MULTI_HOST ? (
               <div className="space-y-3">
                 {script.segments.map((segment, idx) => (
                   <div key={idx} className="flex gap-2">
                     <div className="flex-shrink-0">
-                      {segment.speaker === 'HOST_1' ? (
+                      {segment.speaker === "HOST_1" ? (
                         <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
                           H1
                         </div>
@@ -108,17 +124,19 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-700 mb-0.5">
-                        {segment.speaker === 'HOST_1' ? 'Host 1' : 'Host 2'}
+                      <p className="text-xs font-medium text-gray-200 mb-0.5">
+                        {segment.speaker === "HOST_1" ? "Host 1" : "Host 2"}
                       </p>
-                      <p className="text-xs text-gray-600">{segment.text}</p>
+                      <p className="text-xs text-gray-300">{segment.text}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="prose prose-sm max-w-none">
-                <p className="whitespace-pre-wrap text-xs text-gray-700">{script.full_script}</p>
+                <p className="whitespace-pre-wrap text-xs text-gray-200">
+                  {script.full_script}
+                </p>
               </div>
             )}
           </div>
@@ -131,7 +149,7 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
         </div>
       ) : error ? (
         <div className="text-center py-8">
-          <p className="text-red-500 mb-3">{error}</p>
+          <p className="text-red-400 mb-3">{error}</p>
           <Button onClick={generateScriptContent} variant="outline" size="sm">
             Try Again
           </Button>
@@ -140,4 +158,3 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
     </NodeWrapper>
   );
 }
-

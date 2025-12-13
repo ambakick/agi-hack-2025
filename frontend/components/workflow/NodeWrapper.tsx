@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { ReactNode, useEffect } from 'react';
-import { Handle, Position } from 'reactflow';
-import { X, Check, Loader2, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
+import { ReactNode, useEffect } from "react";
+import { Handle, Position } from "reactflow";
+import { X, Check, Loader2, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 
 interface NodeWrapperProps {
   id: string;
@@ -57,16 +57,16 @@ export function NodeWrapper({
   return (
     <div
       className={cn(
-        'bg-white rounded-xl border-l-4 shadow-lg transition-all duration-300',
-        isExpanded ? 'shadow-2xl' : 'shadow-md hover:shadow-xl',
-        isLoading && 'animate-pulse-border',
-        error && 'border-red-500',
+        "bg-gray-800 rounded-xl border-l-4 shadow-lg transition-all duration-300",
+        isExpanded ? "shadow-2xl" : "shadow-md hover:shadow-xl",
+        isLoading && "animate-pulse-border",
+        error && "border-red-500",
         !error && !isLoading && `border-[${color}]`
       )}
       style={{
-        borderLeftColor: error ? '#ef4444' : color,
-        width: isExpanded ? '600px' : '280px',
-        minHeight: isExpanded ? '400px' : '120px',
+        borderLeftColor: error ? "#ef4444" : color,
+        width: isExpanded ? "600px" : "280px",
+        minHeight: isExpanded ? "400px" : "120px",
       }}
     >
       {/* Handles for ReactFlow connections */}
@@ -88,12 +88,12 @@ export function NodeWrapper({
       {/* Header */}
       <div
         className={cn(
-          'p-4 flex items-center justify-between cursor-pointer',
-          !isExpanded && 'hover:bg-gray-50',
-          'group'
+          "p-4 flex items-center justify-between cursor-pointer",
+          !isExpanded && "hover:bg-gray-700",
+          "group"
         )}
         onClick={!isExpanded ? handleClick : undefined}
-        title={!isExpanded ? 'Click to expand' : undefined}
+        title={!isExpanded ? "Click to expand" : undefined}
       >
         <div className="flex items-center gap-3 flex-1">
           <div
@@ -103,11 +103,11 @@ export function NodeWrapper({
             {icon}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 text-sm truncate">
+            <h3 className="font-semibold text-white text-sm truncate">
               {title}
             </h3>
             {!isExpanded && summary && (
-              <p className="text-xs text-gray-500 truncate mt-0.5">{summary}</p>
+              <p className="text-xs text-gray-400 truncate mt-0.5">{summary}</p>
             )}
           </div>
         </div>
@@ -133,9 +133,9 @@ export function NodeWrapper({
                 e.stopPropagation();
                 onCollapse();
               }}
-              className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              className="w-6 h-6 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-colors"
             >
-              <X className="w-4 h-4 text-gray-600" />
+              <X className="w-4 h-4 text-gray-300" />
             </button>
           )}
         </div>
@@ -144,7 +144,7 @@ export function NodeWrapper({
       {/* Error message */}
       {error && !isExpanded && (
         <div className="px-4 pb-3">
-          <p className="text-xs text-red-600">{error}</p>
+          <p className="text-xs text-red-400">{error}</p>
         </div>
       )}
 
@@ -152,8 +152,8 @@ export function NodeWrapper({
       {isExpanded && (
         <div className="px-4 pb-4">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-lg">
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
           <div className="workflow-node-content">{children}</div>
@@ -162,4 +162,3 @@ export function NodeWrapper({
     </div>
   );
 }
-

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { Check } from 'lucide-react';
-import type { VideoInfo } from '@/lib/types';
-import { Card } from '@/components/ui/card';
+import Image from "next/image";
+import { Check } from "lucide-react";
+import type { VideoInfo } from "@/lib/types";
+import { Card } from "@/components/ui/card";
 
 interface VideoCardProps {
   video: VideoInfo;
@@ -14,8 +14,10 @@ interface VideoCardProps {
 export function VideoCard({ video, selected, onToggle }: VideoCardProps) {
   return (
     <Card
-      className={`cursor-pointer transition-all ${
-        selected ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'
+      className={`cursor-pointer transition-all bg-gray-800 border-gray-700 ${
+        selected
+          ? "ring-2 ring-primary shadow-lg"
+          : "hover:shadow-md hover:border-gray-600"
       }`}
       onClick={onToggle}
     >
@@ -33,16 +35,15 @@ export function VideoCard({ video, selected, onToggle }: VideoCardProps) {
           </div>
         )}
       </div>
-      <div className="p-4">
-        <h3 className="font-semibold text-sm line-clamp-2 mb-2">
+      <div className="p-4 bg-gray-700">
+        <h3 className="font-semibold text-sm line-clamp-2 mb-2 text-white">
           {video.title}
         </h3>
-        <p className="text-xs text-gray-500">{video.channel_name}</p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-gray-400">{video.channel_name}</p>
+        <p className="text-xs text-gray-500 mt-1">
           {video.view_count.toLocaleString()} views
         </p>
       </div>
     </Card>
   );
 }
-
