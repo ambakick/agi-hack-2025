@@ -1,0 +1,32 @@
+# Core Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+httpx>=0.26.0
+python-dotenv>=1.0.0
+
+# Google APIs (updated versions for faster resolution)
+google-generativeai>=0.8.0
+google-api-python-client>=2.100.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.0
+
+# Pin grpc to avoid backtracking
+grpcio>=1.62.0
+grpcio-status>=1.62.0
+protobuf>=4.25.0,<5.0.0
+
+# YouTube Transcripts
+youtube-transcript-api>=0.6.2
+
+# ElevenLabs TTS
+elevenlabs>=1.0.0
+
+# Template Engine
+jinja2>=3.1.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+pytest-mock>=3.12.0

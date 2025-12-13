@@ -206,13 +206,66 @@ For the demo:
 
 ## Getting Started
 
-*Setup instructions will be added as development progresses.*
+### Quick Start
+
+See [QUICKSTART.md](QUICKSTART.md) for 5-minute setup guide.
+
+### Detailed Setup
+
+See [SETUP.md](SETUP.md) for comprehensive installation instructions.
+
+### Testing
+
+See [TESTING.md](TESTING.md) for manual and automated testing guides.
+
+### Project Overview
+
+See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for complete implementation details.
 
 ## API Keys Required
 
-- Google Cloud API (YouTube Data API, Gemini, Vertex AI/Veo)
+- **YouTube Data API** - For searching and retrieving podcast content
+- **Google Gemini API** - For content analysis and script generation
+- **ElevenLabs API** - For text-to-speech conversion
+
+Get your API keys:
+- [YouTube Data API](https://console.cloud.google.com/)
+- [Google Gemini](https://makersuite.google.com/app/apikey)
+- [ElevenLabs](https://elevenlabs.io/)
+
+## Implementation Status
+
+✅ **Completed Features:**
+- Topic Input & YouTube Discovery
+- Reference Selection UI
+- Transcript Retrieval
+- Content Analysis (Gemini)
+- Outline Generation
+- Script Writing (Single & Multi-host)
+- Text-to-Speech Conversion (ElevenLabs)
+- Complete Frontend Wizard
+- Audio Playback & Download
+
+🚧 **Future Enhancements:**
+- Video Generation (Google Veo)
+- Visual Assembly (Remotion)
+- Show Notes Generation
+- Fact-Checking Module
+- User Authentication
+
+## Tech Stack
+
+**Backend:**
+- FastAPI (Python 3.11+)
+- Google Gemini 3
+- YouTube Data API
 - ElevenLabs API
+
+**Frontend:**
+- Next.js 14
+- TypeScript
+- TailwindCSS + shadcn/ui
 
 ## License
 
-*TBD*
+MIT License - Built for Gemini AGI Hackathon December 2025
