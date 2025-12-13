@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from typing import List
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,19 +14,18 @@ class Settings(BaseSettings):
     )
     
     # API Keys
-    youtube_api_key: str
     gemini_api_key: str
     elevenlabs_api_key: str
     
     # Server Configuration
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 8001
     debug: bool = False
     
     # CORS Configuration
     cors_origins: str = "http://localhost:3000"
     
-    # Video Generation Output Directories
+    # Output Directories
     video_output_dir: str = "./video_output"
     audio_output_dir: str = "./audio_output"
     

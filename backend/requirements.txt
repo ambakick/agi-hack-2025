@@ -8,6 +8,7 @@ python-dotenv>=1.0.0
 
 # Google APIs (updated versions for faster resolution)
 google-generativeai>=0.8.0
+google-genai>=0.2.0
 google-api-python-client>=2.100.0
 google-auth-httplib2>=0.2.0
 google-auth-oauthlib>=1.2.0
@@ -25,6 +26,10 @@ elevenlabs>=1.0.0
 
 # Template Engine
 jinja2>=3.1.0
+
+# Video Processing
+moviepy>=1.0.3
+imageio-ffmpeg>=0.4.9
 
 # Testing
 pytest>=7.4.0
