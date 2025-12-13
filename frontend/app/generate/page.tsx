@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect } from "react";
+import { Suspense, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import ReactFlow, {
   Background,
@@ -55,12 +55,30 @@ function WorkflowCanvas() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(state.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(state.edges);
+  
+  // Track previous state to prevent unnecessary updates
+  const prevStateRef = useRef<{ nodes: typeof state.nodes; edges: typeof state.edges }>({
+    nodes: state.nodes,
+    edges: state.edges,
+  });
 
   // Sync workflow state with ReactFlow state
   useEffect(() => {
-    setNodes(state.nodes);
-    setEdges(state.edges);
-  }, [state.nodes, state.edges, setNodes, setEdges]);
+    // Only update if state actually changed (by reference)
+    const nodesChanged = prevStateRef.current.nodes !== state.nodes;
+    const edgesChanged = prevStateRef.current.edges !== state.edges;
+    
+    if (nodesChanged) {
+      setNodes(state.nodes);
+      prevStateRef.current.nodes = state.nodes;
+    }
+    
+    if (edgesChanged) {
+      setEdges(state.edges);
+      prevStateRef.current.edges = state.edges;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.nodes, state.edges]);
 
   // Script node completion handler
   const handleScriptComplete = useCallback(
@@ -107,8 +125,8 @@ function WorkflowCanvas() {
           isExpanded: true,
           isCompleted: false,
           isLoading: false,
-          topic: state.topic,
-          format: state.format || PodcastFormat.SINGLE_HOST,
+          topic: state.generationState.topic,
+          format: state.generationState.format || PodcastFormat.SINGLE_HOST,
           outline,
           onComplete: handleScriptComplete,
           onExpand: () => expandNode("script"),
@@ -117,8 +135,8 @@ function WorkflowCanvas() {
       );
     },
     [
-      state.topic,
-      state.format,
+      state.generationState.topic,
+      state.generationState.format,
       updateGenerationState,
       completeNode,
       addNode,
@@ -140,8 +158,8 @@ function WorkflowCanvas() {
       completeNode("references", { videos: selectedVideos });
 
       console.log("Adding outline node with state:", {
-        topic: state.topic,
-        format: state.format,
+        topic: state.generationState.topic,
+        format: state.generationState.format,
       });
 
       // Add Outline node
@@ -153,8 +171,8 @@ function WorkflowCanvas() {
           isExpanded: true,
           isCompleted: false,
           isLoading: false,
-          topic: state.topic,
-          format: state.format || PodcastFormat.SINGLE_HOST,
+          topic: state.generationState.topic,
+          format: state.generationState.format || PodcastFormat.SINGLE_HOST,
           videos: selectedVideos,
           onComplete: handleOutlineComplete,
           onExpand: () => expandNode("outline"),
@@ -163,8 +181,8 @@ function WorkflowCanvas() {
       );
     },
     [
-      state.topic,
-      state.format,
+      state.generationState.topic,
+      state.generationState.format,
       updateGenerationState,
       completeNode,
       addNode,

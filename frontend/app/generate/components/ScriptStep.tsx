@@ -94,9 +94,35 @@ export function ScriptStep({ topic, format, outline, onNext, onBack }: ScriptSte
           </CardHeader>
           <CardContent>
             <div className="bg-gray-50 rounded-lg p-6 max-h-96 overflow-y-auto">
-              <div className="prose prose-sm max-w-none">
-                <p className="whitespace-pre-wrap text-gray-700">{script.script}</p>
-              </div>
+              {format === PodcastFormat.TWO_HOSTS ? (
+                <div className="space-y-4">
+                  {script.segments.map((segment, idx) => (
+                    <div key={idx} className="flex gap-3">
+                      <div className="flex-shrink-0">
+                        {segment.speaker === 'HOST_1' ? (
+                          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm">
+                            H1
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm">
+                            H2
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-700 mb-1">
+                          {segment.speaker === 'HOST_1' ? 'Host 1' : 'Host 2'}
+                        </p>
+                        <p className="text-sm text-gray-600">{segment.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="whitespace-pre-wrap text-gray-700">{script.full_script}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -113,4 +139,3 @@ export function ScriptStep({ topic, format, outline, onNext, onBack }: ScriptSte
     </div>
   );
 }
-

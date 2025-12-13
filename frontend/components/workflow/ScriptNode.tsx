@@ -98,7 +98,7 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span>
-              {data.format === PodcastFormat.MULTI_HOST
+              {data.format === PodcastFormat.TWO_HOSTS
                 ? "Two-host dialogue"
                 : "Single narrator"}
             </span>
@@ -108,7 +108,7 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
           </div>
 
           <div className="bg-gray-700 rounded-lg p-4 max-h-80 overflow-y-auto">
-            {data.format === PodcastFormat.MULTI_HOST ? (
+            {data.format === PodcastFormat.TWO_HOSTS ? (
               <div className="space-y-3">
                 {script.segments.map((segment, idx) => (
                   <div key={idx} className="flex gap-2">

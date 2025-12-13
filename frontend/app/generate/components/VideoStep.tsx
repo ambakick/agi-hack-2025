@@ -38,7 +38,7 @@ export function VideoStep({ script, onBack }: VideoStepProps) {
         setError(null);
         
         // Convert script to transcript format
-        const transcript = script.script;
+        const transcript = script.full_script;
         
         // Start full pipeline
         setStage('extracting');

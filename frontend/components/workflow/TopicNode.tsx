@@ -35,7 +35,7 @@ export function TopicNode({ id, data }: TopicNodeProps) {
 
   const summary = data.topic
     ? `${data.topic} (${
-        data.format === PodcastFormat.MULTI_HOST ? "Two Hosts" : "Single Host"
+        data.format === PodcastFormat.TWO_HOSTS ? "Two Hosts" : "Single Host"
       })`
     : "Click to start";
 
@@ -114,23 +114,23 @@ export function TopicNode({ id, data }: TopicNodeProps) {
             </button>
 
             <button
-              onClick={() => setFormat(PodcastFormat.MULTI_HOST)}
+              onClick={() => setFormat(PodcastFormat.TWO_HOSTS)}
               className={`p-4 rounded-lg border-2 transition-all ${
-                format === PodcastFormat.MULTI_HOST
+                format === PodcastFormat.TWO_HOSTS
                   ? "border-blue-500 bg-blue-500/20"
                   : "border-gray-600 hover:border-gray-500 bg-gray-700"
               }`}
             >
               <Users
                 className={`w-6 h-6 mx-auto mb-2 ${
-                  format === PodcastFormat.MULTI_HOST
+                  format === PodcastFormat.TWO_HOSTS
                     ? "text-blue-400"
                     : "text-gray-400"
                 }`}
               />
               <h4
                 className={`font-semibold text-sm mb-1 ${
-                  format === PodcastFormat.MULTI_HOST
+                  format === PodcastFormat.TWO_HOSTS
                     ? "text-white"
                     : "text-gray-300"
                 }`}
@@ -139,7 +139,7 @@ export function TopicNode({ id, data }: TopicNodeProps) {
               </h4>
               <p
                 className={`text-xs ${
-                  format === PodcastFormat.MULTI_HOST
+                  format === PodcastFormat.TWO_HOSTS
                     ? "text-gray-300"
                     : "text-gray-500"
                 }`}

@@ -130,7 +130,8 @@ export function OutlineStep({
                 <ul className="space-y-2">
                   {analysis.themes.map((theme, idx) => (
                     <li key={idx} className="text-sm">
-                      {theme}
+                      <span className="font-medium">{theme.theme}:</span>{' '}
+                      {theme.description}
                     </li>
                   ))}
                 </ul>
@@ -146,7 +147,7 @@ export function OutlineStep({
           <CardHeader>
             <CardTitle>Episode Outline</CardTitle>
             <CardDescription>
-              Structured plan for your podcast episode (~{Math.round(outline.total_estimated_duration)}{' '}
+              Structured plan for your podcast episode (~{Math.round(outline.total_duration_minutes)}{' '}
               minutes)
             </CardDescription>
           </CardHeader>
@@ -160,7 +161,7 @@ export function OutlineStep({
                     </h4>
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="w-4 h-4 mr-1" />
-                      {Math.round(section.estimated_duration)}m
+                      {Math.round(section.duration_minutes)}m
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">{section.description}</p>
@@ -182,4 +183,3 @@ export function OutlineStep({
     </div>
   );
 }
-
