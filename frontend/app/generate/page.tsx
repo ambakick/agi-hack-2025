@@ -235,11 +235,11 @@ function WorkflowCanvas() {
 
   // Track if we're in edit mode (some completed nodes were removed)
   const hasEditedNode = nodes.some(
-    (n) => !n.data.isCompleted && n.id !== "topic"
+    (n: any) => !n.data.isCompleted && n.id !== "topic"
   );
 
   // Check if audio is completed for confetti
-  const audioNode = nodes.find((n) => n.id === "audio");
+  const audioNode = nodes.find((n: any) => n.id === "audio");
   const showConfetti = audioNode?.data.isCompleted || false;
 
   return (
@@ -269,7 +269,7 @@ function WorkflowCanvas() {
         <MiniMap
           className="bg-gray-800 shadow-lg rounded-lg border border-gray-700"
           maskColor="rgba(0, 0, 0, 0.5)"
-          nodeColor={(node) => {
+          nodeColor={(node: any) => {
             const colors: Record<string, string> = {
               topicNode: "#3b82f6",
               referencesNode: "#8b5cf6",
@@ -301,7 +301,7 @@ function WorkflowCanvas() {
               {["Topic", "References", "Outline", "Script", "Audio"].map(
                 (label, idx) => {
                   const nodeId = label.toLowerCase();
-                  const node = nodes.find((n) => n.id === nodeId);
+                  const node = nodes.find((n: any) => n.id === nodeId);
                   const isCompleted = node?.data.isCompleted;
                   const isActive = node && !isCompleted;
 
