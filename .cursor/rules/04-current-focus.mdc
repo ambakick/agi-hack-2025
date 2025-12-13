@@ -1,0 +1,64 @@
+---
+name: Current Focus
+description: Active development tasks and context
+globs: ["**/*.{py,ts,tsx,js,jsx}"]
+---
+
+# Current Sprint
+
+## Project Status
+- Phase: Initial setup and architecture
+- Target: AGI Hackathon 2025 submission
+- Tech Stack: Python + FastAPI (backend), Google Gemini 3, ElevenLabs, Google Veo
+
+## Active Work
+- Setting up FastAPI project structure
+- Configuring API integrations (YouTube, Gemini, ElevenLabs, Veo)
+- Building initial endpoint scaffolding
+- Creating Pydantic models for data validation
+
+## Priority Tasks
+1. Set up FastAPI project with proper structure
+2. Implement YouTube podcast discovery endpoint
+3. Create transcription retrieval service
+4. Test Gemini 3 API integration for content analysis
+5. Prototype ElevenLabs TTS integration
+
+## Known Issues
+- YouTube caption extraction may fail for older videos (need fallback strategy)
+- Veo API rate limits need investigation
+- Remotion integration approach TBD (subprocess vs API)
+
+## Technical Decisions Made
+- Backend: Python 3.11+ with FastAPI
+- Use async/await for all I/O operations
+- Pydantic for data validation
+- Environment variables for API keys
+- Service-based architecture (one service per workflow step)
+
+## Next Steps
+1. Complete basic FastAPI setup with routes
+2. Implement YouTube Data API integration
+3. Test caption/transcript retrieval
+4. Build content analysis with Gemini
+5. Create outline generation endpoint
+6. Integrate ElevenLabs for TTS
+7. Design Veo + Remotion video pipeline
+
+## API Keys Required
+- YouTube Data API v3
+- Google Gemini API (via Vertex AI or AI Studio)
+- ElevenLabs API
+- Google Veo (Vertex AI)
+
+## Testing Strategy
+- Unit tests for each service module
+- Mock external APIs in tests
+- Integration tests for complete pipeline
+- Manual testing with real APIs for validation
+
+## Documentation Updates Needed
+- Update README with setup instructions
+- Document API integration details
+- Add example .env file
+- Create API endpoint documentation

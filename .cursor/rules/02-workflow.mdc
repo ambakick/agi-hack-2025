@@ -1,0 +1,39 @@
+---
+name: Workflow Steps
+description: Quick reference for system workflow
+globs: ["src/**/*.{ts,tsx,js}"]
+---
+
+# Quick Workflow Reference
+
+## Pipeline Flow
+Topic → YouTube Search → Select References → Get Transcripts →
+Analyze (Gemini) → Generate Outline → Write Script (Gemini) →
+Fact-Check → TTS (ElevenLabs) → Video (Veo+Remotion) →
+Show Notes (Gemini) → Deliver
+
+## Key Integration Points
+- **YouTube API**: Search & captions (English only)
+- **Gemini 3**: Analysis, outline, script, show notes
+- **ElevenLabs**: Script → Audio (MP3/WAV)
+- **Veo**: Script segments → HD video clips (5-6 scenes, 5s each)
+- **Remotion**: Audio + slides/animations → Final video
+
+## Output Requirements
+- Audio file (MP3/WAV)
+- Video file (MP4, 9:16 vertical format preferred)
+- Show notes with timestamps (Markdown format)
+
+## Data Flow
+Each module takes input from the previous step and produces output for the next:
+- Discovery produces list of YouTube videos
+- Selection produces filtered list of references
+- Transcription produces raw text
+- Analysis produces themes and key points
+- Outline produces structured episode plan
+- Script produces conversational narrative
+- TTS produces audio file
+- Video produces visual content
+- Show notes produces formatted summary
+
+For full details, reference: `docs/WORKFLOW.md`

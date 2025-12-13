@@ -1,0 +1,38 @@
+---
+name: Project Overview
+description: Core project context for podcast generation system
+globs: ["**/*.{ts,tsx,js,jsx,py}"]
+---
+
+# Podcast Generation System
+
+You are working on an AI-powered podcast generation system that creates complete podcast episodes (audio + video + show notes) from a topic prompt.
+
+## Key Documentation
+- Full workflow: See `docs/WORKFLOW.md`
+- Architecture: See `docs/ARCHITECTURE.md`
+- API integrations: See `docs/API_INTEGRATIONS.md`
+
+## Core Technologies
+- **LLM**: Google Gemini 3 (content analysis, script writing, show notes)
+- **TTS**: ElevenLabs (natural voice synthesis)
+- **Video**: Google Veo + Remotion (visual generation)
+- **Data Source**: YouTube Data API (English podcasts only)
+
+## System Modules (11 steps)
+1. Topic Input & Discovery (YouTube API)
+2. Reference Selection
+3. Transcription Retrieval
+4. Content Analysis (Gemini)
+5. Outline Generation (Gemini + human)
+6. Script Writing (Gemini 3)
+7. Fact-Checking (optional)
+8. Text-to-Speech (ElevenLabs)
+9. Video Generation (Veo + Remotion)
+10. Show Notes (Gemini)
+11. Final Assembly
+
+## Important Constraints
+- YouTube-only sources
+- English language only
+- Must produce: audio file, video file, show notes with timestamps
