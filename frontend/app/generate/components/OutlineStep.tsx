@@ -130,8 +130,7 @@ export function OutlineStep({
                 <ul className="space-y-2">
                   {analysis.themes.map((theme, idx) => (
                     <li key={idx} className="text-sm">
-                      <span className="font-medium">{theme.theme}:</span>{' '}
-                      {theme.description}
+                      {theme}
                     </li>
                   ))}
                 </ul>
@@ -147,29 +146,24 @@ export function OutlineStep({
           <CardHeader>
             <CardTitle>Episode Outline</CardTitle>
             <CardDescription>
-              Structured plan for your podcast episode (~{outline.total_duration_minutes}{' '}
+              Structured plan for your podcast episode (~{Math.round(outline.total_estimated_duration)}{' '}
               minutes)
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {outline.sections.map((section: OutlineSection, idx) => (
-                <div key={section.id} className="border rounded-lg p-4">
+                <div key={idx} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="font-semibold">
                       {idx + 1}. {section.title}
                     </h4>
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="w-4 h-4 mr-1" />
-                      {section.duration_minutes}m
+                      {Math.round(section.estimated_duration)}m
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">{section.description}</p>
-                  <ul className="text-sm text-gray-500 list-disc list-inside">
-                    {section.key_points.map((point, pidx) => (
-                      <li key={pidx}>{point}</li>
-                    ))}
-                  </ul>
                 </div>
               ))}
             </div>

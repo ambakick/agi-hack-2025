@@ -64,9 +64,9 @@ export function TopicStep({ initialTopic, onNext }: TopicStepProps) {
               </button>
 
               <button
-                onClick={() => setFormat(PodcastFormat.MULTI_HOST)}
+                onClick={() => setFormat(PodcastFormat.TWO_HOSTS)}
                 className={`p-6 rounded-lg border-2 transition-all ${
-                  format === PodcastFormat.MULTI_HOST
+                  format === PodcastFormat.TWO_HOSTS
                     ? 'border-primary bg-primary/5'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}

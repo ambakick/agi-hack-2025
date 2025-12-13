@@ -5,14 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { convertToSpeech } from '@/lib/api';
 import type { ScriptResponse } from '@/lib/types';
-import { Loader2, Download, Play, Pause, Volume2 } from 'lucide-react';
+import { Loader2, Download, Play, Pause, Volume2, Video } from 'lucide-react';
 
 interface AudioStepProps {
   script: ScriptResponse;
   onBack: () => void;
+  onNext?: () => void;
 }
 
-export function AudioStep({ script, onBack }: AudioStepProps) {
+export function AudioStep({ script, onBack, onNext }: AudioStepProps) {
   const [loading, setLoading] = useState(true);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -153,9 +154,17 @@ export function AudioStep({ script, onBack }: AudioStepProps) {
         <Button onClick={onBack} variant="outline">
           Back to Script
         </Button>
-        <Button onClick={() => (window.location.href = '/')} variant="secondary">
-          Create New Podcast
-        </Button>
+        <div className="flex gap-2">
+          {onNext && (
+            <Button onClick={onNext} size="lg">
+              <Video className="w-5 h-5 mr-2" />
+              Generate Video
+            </Button>
+          )}
+          <Button onClick={() => (window.location.href = '/')} variant="secondary">
+            Create New Podcast
+          </Button>
+        </div>
       </div>
     </div>
   );

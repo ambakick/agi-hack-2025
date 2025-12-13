@@ -7,6 +7,7 @@ import { ReferencesStep } from './components/ReferencesStep';
 import { OutlineStep } from './components/OutlineStep';
 import { ScriptStep } from './components/ScriptStep';
 import { AudioStep } from './components/AudioStep';
+import { VideoStep } from './components/VideoStep';
 import { Progress } from '@/components/ui/progress';
 import { PodcastFormat } from '@/lib/types';
 import type {
@@ -20,7 +21,7 @@ import type {
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-type Step = 'topic' | 'references' | 'outline' | 'script' | 'audio';
+type Step = 'topic' | 'references' | 'outline' | 'script' | 'audio' | 'video';
 
 function GenerateContent() {
   const searchParams = useSearchParams();
@@ -36,6 +37,7 @@ function GenerateContent() {
     outline: null,
     script: null,
     audioUrl: null,
+    videoUrl: null,
   });
 
   const steps: { id: Step; label: string }[] = [
@@ -44,6 +46,7 @@ function GenerateContent() {
     { id: 'outline', label: 'Outline' },
     { id: 'script', label: 'Script' },
     { id: 'audio', label: 'Audio' },
+    { id: 'video', label: 'Video' },
   ];
 
   const currentStepIndex = steps.findIndex((s) => s.id === step);
@@ -71,6 +74,10 @@ function GenerateContent() {
   const handleScriptNext = (script: ScriptResponse) => {
     setState({ ...state, script });
     setStep('audio');
+  };
+
+  const handleAudioNext = () => {
+    setStep('video');
   };
 
   return (
@@ -148,7 +155,18 @@ function GenerateContent() {
           )}
 
           {step === 'audio' && state.script && (
-            <AudioStep script={state.script} onBack={() => setStep('script')} />
+            <AudioStep 
+              script={state.script} 
+              onBack={() => setStep('script')}
+              onNext={handleAudioNext}
+            />
+          )}
+
+          {step === 'video' && state.script && (
+            <VideoStep 
+              script={state.script} 
+              onBack={() => setStep('audio')}
+            />
           )}
         </div>
       </div>

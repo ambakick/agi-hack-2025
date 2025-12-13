@@ -1,6 +1,9 @@
 """FastAPI application entry point."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
 from app.core.config import settings
 from app.api.v1 import discovery, transcripts, analysis, outline, script, tts, video
 from app.api.v1.endpoints import cache as cache_endpoints
@@ -31,6 +34,18 @@ app.include_router(script.router, prefix="/api/v1", tags=["script"])
 app.include_router(tts.router, prefix="/api/v1", tags=["tts"])
 app.include_router(video.router, prefix="/api/v1", tags=["video"])
 app.include_router(cache_endpoints.router, prefix="/api/v1/cache", tags=["cache"])
+
+# Mount static file directories for video and audio output
+video_output_path = Path(settings.video_output_dir).resolve()
+audio_output_path = Path(settings.audio_output_dir).resolve()
+
+# Create directories if they don't exist
+video_output_path.mkdir(parents=True, exist_ok=True)
+audio_output_path.mkdir(parents=True, exist_ok=True)
+
+# Mount static file serving
+app.mount("/video_output", StaticFiles(directory=str(video_output_path)), name="video_output")
+app.mount("/audio_output", StaticFiles(directory=str(audio_output_path)), name="audio_output")
 
 
 @app.get("/")

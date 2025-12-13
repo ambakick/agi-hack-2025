@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoCard } from '@/components/VideoCard';
-import { discoverPodcasts } from '@/lib/api';
+import { discoverVideos } from '@/lib/api';
 import type { VideoInfo } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -24,7 +24,7 @@ export function ReferencesStep({ topic, onNext, onBack }: ReferencesStepProps) {
     async function fetchVideos() {
       try {
         setLoading(true);
-        const results = await discoverPodcasts(topic, 12);
+        const results = await discoverVideos(topic, 12);
         setVideos(results);
       } catch (err) {
         setError('Failed to fetch videos. Please try again.');
