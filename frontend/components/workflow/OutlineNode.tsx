@@ -60,21 +60,38 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
       isExpanded: data.isExpanded,
       stage,
       hasVideos: !!data.videos,
-      hasTopic: !!data.topic,
-      hasFormat: !!data.format,
+      videosCount: data.videos?.length,
+      topic: data.topic,
+      format: data.format,
     });
 
+    // Auto-start processing when node is expanded and has all required data
     if (
       data.isExpanded &&
       stage === "idle" &&
       data.videos &&
+      data.videos.length > 0 &&
       data.topic &&
       data.format
     ) {
-      console.log("Starting processOutline...");
+      console.log("Starting processOutline automatically...");
       processOutline();
     }
-  }, [data.isExpanded, stage, data.videos, data.topic, data.format]);
+  }, [data.isExpanded, data.videos, data.topic, data.format]);
+
+  // Separate effect to start processing when stage becomes idle with all data
+  useEffect(() => {
+    if (
+      stage === "idle" &&
+      data.isExpanded &&
+      data.videos?.length &&
+      data.topic &&
+      data.format
+    ) {
+      console.log("Re-triggering processOutline due to stage change");
+      processOutline();
+    }
+  }, [stage]);
 
   const processOutline = async () => {
     console.log("processOutline called");
@@ -229,7 +246,23 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
             Try Again
           </Button>
         </div>
-      ) : null}
+      ) : (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <p className="text-sm text-gray-300 mb-2">Initializing...</p>
+            <p className="text-xs text-gray-500">
+              {!data.videos ? "Waiting for videos..." : ""}
+              {!data.topic ? "Waiting for topic..." : ""}
+              {!data.format ? "Waiting for format..." : ""}
+              {data.videos && data.topic && data.format && stage === "idle" ? (
+                <Button onClick={processOutline} size="sm" className="mt-2">
+                  Start Analysis
+                </Button>
+              ) : null}
+            </p>
+          </div>
+        </div>
+      )}
     </NodeWrapper>
   );
 }

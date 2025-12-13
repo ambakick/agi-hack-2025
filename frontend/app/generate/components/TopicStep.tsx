@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PodcastFormat } from '@/lib/types';
-import { Mic, Users } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { PodcastFormat } from "@/lib/types";
+import { Mic, Users } from "lucide-react";
 
 interface TopicStepProps {
   initialTopic: string;
@@ -13,7 +19,9 @@ interface TopicStepProps {
 
 export function TopicStep({ initialTopic, onNext }: TopicStepProps) {
   const [topic, setTopic] = useState(initialTopic);
-  const [format, setFormat] = useState<PodcastFormat>(PodcastFormat.SINGLE_HOST);
+  const [format, setFormat] = useState<PodcastFormat>(
+    PodcastFormat.SINGLE_HOST
+  );
 
   const handleNext = () => {
     if (topic.trim()) {
@@ -52,8 +60,8 @@ export function TopicStep({ initialTopic, onNext }: TopicStepProps) {
                 onClick={() => setFormat(PodcastFormat.SINGLE_HOST)}
                 className={`p-6 rounded-lg border-2 transition-all ${
                   format === PodcastFormat.SINGLE_HOST
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <Mic className="w-8 h-8 mx-auto mb-2 text-primary" />
@@ -64,11 +72,11 @@ export function TopicStep({ initialTopic, onNext }: TopicStepProps) {
               </button>
 
               <button
-                onClick={() => setFormat(PodcastFormat.TWO_HOSTS)}
+                onClick={() => setFormat(PodcastFormat.MULTI_HOST)}
                 className={`p-6 rounded-lg border-2 transition-all ${
-                  format === PodcastFormat.TWO_HOSTS
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 hover:border-gray-300'
+                  format === PodcastFormat.MULTI_HOST
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <Users className="w-8 h-8 mx-auto mb-2 text-primary" />
@@ -90,4 +98,3 @@ export function TopicStep({ initialTopic, onNext }: TopicStepProps) {
     </div>
   );
 }
-

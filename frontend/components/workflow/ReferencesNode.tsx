@@ -6,7 +6,7 @@ import { NodeWrapper } from "./NodeWrapper";
 import { Button } from "@/components/ui/button";
 import { VideoCard } from "@/components/VideoCard";
 import { WorkflowNodeData } from "@/lib/workflowState";
-import { discoverVideos } from "@/lib/api";
+import { discoverPodcasts } from "@/lib/api";
 import type { VideoInfo } from "@/lib/types";
 import { Video, Loader2 } from "lucide-react";
 
@@ -39,7 +39,7 @@ export function ReferencesNode({ id, data }: ReferencesNodeProps) {
     try {
       setLoading(true);
       setError(null);
-      const results = await discoverVideos(data.topic, 12);
+      const results = await discoverPodcasts(data.topic, 12);
       setVideos(results);
     } catch (err) {
       setError("Failed to fetch videos. Please try again.");
