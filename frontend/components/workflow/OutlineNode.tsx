@@ -1,0 +1,165 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { NodeProps } from 'reactflow';
+import { NodeWrapper } from './NodeWrapper';
+import { Button } from '@/components/ui/button';
+import { WorkflowNodeData } from '@/lib/workflowState';
+import { getTranscripts, analyzeContent, generateOutline } from '@/lib/api';
+import type { VideoInfo, VideoTranscript, AnalysisResponse, OutlineResponse, PodcastFormat, OutlineSection } from '@/lib/types';
+import { FileText, Clock, Loader2 } from 'lucide-react';
+
+interface OutlineNodeProps extends NodeProps {
+  data: WorkflowNodeData & {
+    topic?: string;
+    format?: PodcastFormat;
+    videos?: VideoInfo[];
+    onComplete?: (transcripts: VideoTranscript[], analysis: AnalysisResponse, outline: OutlineResponse) => void;
+    onExpand?: () => void;
+    onCollapse?: () => void;
+  };
+}
+
+export function OutlineNode({ id, data }: OutlineNodeProps) {
+  const [stage, setStage] = useState<'idle' | 'transcripts' | 'analysis' | 'outline' | 'done'>('idle');
+  const [transcripts, setTranscripts] = useState<VideoTranscript[]>(data.transcripts || []);
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(data.analysis || null);
+  const [outline, setOutline] = useState<OutlineResponse | null>(data.outline || null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data.isExpanded && stage === 'idle' && data.videos && data.topic && data.format) {
+      processOutline();
+    }
+  }, [data.isExpanded, stage]);
+
+  const processOutline = async () => {
+    if (!data.videos || !data.topic || !data.format) return;
+
+    try {
+      // Fetch transcripts
+      setStage('transcripts');
+      const videoIds = data.videos.map((v) => v.video_id);
+      const transcriptResults = await getTranscripts(videoIds);
+      setTranscripts(transcriptResults);
+
+      // Analyze content
+      setStage('analysis');
+      const analysisResults = await analyzeContent(transcriptResults, data.topic);
+      setAnalysis(analysisResults);
+
+      // Generate outline
+      setStage('outline');
+      const outlineResults = await generateOutline(analysisResults, data.topic, data.format, 15);
+      setOutline(outlineResults);
+
+      setStage('done');
+    } catch (err) {
+      setError('Failed to generate outline. Please try again.');
+      console.error(err);
+      setStage('idle');
+    }
+  };
+
+  const handleNext = () => {
+    if (transcripts && analysis && outline && data.onComplete) {
+      data.onComplete(transcripts, analysis, outline);
+    }
+  };
+
+  const summary = outline
+    ? `Outline ready (~${outline.total_duration_minutes}min)`
+    : 'Generate outline';
+
+  const isLoading = ['transcripts', 'analysis', 'outline'].includes(stage);
+
+  return (
+    <NodeWrapper
+      id={id}
+      icon={<FileText className="w-5 h-5" />}
+      title="Analysis & Outline"
+      summary={summary}
+      color="#14b8a6"
+      isExpanded={data.isExpanded}
+      isCompleted={data.isCompleted}
+      isLoading={data.isLoading || isLoading}
+      error={data.error || error}
+      onExpand={data.onExpand}
+      onCollapse={data.onCollapse}
+    >
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-3" />
+            <p className="text-sm font-medium text-gray-700 mb-1">
+              {stage === 'transcripts' && 'Fetching video transcripts...'}
+              {stage === 'analysis' && 'Analyzing content with Gemini...'}
+              {stage === 'outline' && 'Generating episode outline...'}
+            </p>
+            <p className="text-xs text-gray-500">This may take a minute</p>
+          </div>
+        </div>
+      ) : stage === 'done' && analysis && outline ? (
+        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+          {/* Analysis Summary */}
+          <div className="bg-teal-50 rounded-lg p-3 border border-teal-100">
+            <h4 className="font-semibold text-sm mb-2 text-teal-900">Content Analysis</h4>
+            <p className="text-xs text-gray-700 mb-3">{analysis.summary}</p>
+            <div>
+              <p className="text-xs font-medium text-teal-800 mb-1">Key Themes:</p>
+              <ul className="space-y-1">
+                {analysis.themes.slice(0, 3).map((theme, idx) => (
+                  <li key={idx} className="text-xs text-gray-600">
+                    <span className="font-medium">{theme.theme}:</span> {theme.description}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Outline Sections */}
+          <div>
+            <h4 className="font-semibold text-sm mb-2">
+              Episode Outline ({outline.total_duration_minutes} minutes)
+            </h4>
+            <div className="space-y-2">
+              {outline.sections.map((section: OutlineSection, idx) => (
+                <div key={section.id} className="border rounded-lg p-3 bg-white">
+                  <div className="flex items-start justify-between mb-1">
+                    <h5 className="font-medium text-sm">
+                      {idx + 1}. {section.title}
+                    </h5>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {section.duration_minutes}m
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">{section.description}</p>
+                  <ul className="text-xs text-gray-500 list-disc list-inside space-y-0.5">
+                    {section.key_points.slice(0, 2).map((point, pidx) => (
+                      <li key={pidx}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleNext} size="lg">
+              Generate Script
+            </Button>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-8">
+          <p className="text-red-500 mb-3">{error}</p>
+          <Button onClick={processOutline} variant="outline" size="sm">
+            Try Again
+          </Button>
+        </div>
+      ) : null}
+    </NodeWrapper>
+  );
+}
+
