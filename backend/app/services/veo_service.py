@@ -4,8 +4,9 @@ import logging
 import time
 import asyncio
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from google import genai
+from google.genai import types
 from app.models.schemas import SceneDescription, VideoScene, VideoGenerationResponse
 from app.core.config import settings
 from app.utils.video_utils import ensure_directory, get_output_path
@@ -47,6 +48,48 @@ class VeoService:
         
         return operation
     
+    def _upload_video_to_genai(self, video_path: str):
+        """
+        Upload a video file to GenAI and return the file reference.
+        
+        Args:
+            video_path: Path to video file
+            
+        Returns:
+            GenAI file reference
+        """
+        try:
+            uploaded_file = self.client.files.upload(path=video_path)
+            logger.info(f"Uploaded video {video_path} to GenAI")
+            return uploaded_file
+        except Exception as e:
+            logger.error(f"Error uploading video to GenAI: {str(e)}")
+            raise
+    
+    def _get_video_file_from_operation(self, operation) -> genai.types.File:
+        """
+        Get the video file reference from a completed operation.
+        
+        Args:
+            operation: Completed Veo operation
+            
+        Returns:
+            GenAI file reference to the generated video
+        """
+        try:
+            if not operation.response or not hasattr(operation.response, 'generated_videos'):
+                raise ValueError("Operation response does not contain generated_videos")
+            
+            if not operation.response.generated_videos:
+                raise ValueError("No generated videos found in response")
+            
+            generated_video = operation.response.generated_videos[0]
+            return generated_video.video
+            
+        except Exception as e:
+            logger.error(f"Error getting video file from operation: {str(e)}")
+            raise
+    
     def _download_video(self, operation, output_path: str) -> str:
         """
         Download generated video from operation.
@@ -85,7 +128,8 @@ class VeoService:
     async def generate_video(
         self,
         scene: SceneDescription,
-        output_filename: str = None
+        output_filename: str = None,
+        previous_video_file: Optional[genai.types.File] = None
     ) -> VideoScene:
         """
         Generate a single video clip from scene description.
@@ -93,6 +137,7 @@ class VeoService:
         Args:
             scene: Scene description with visual prompt
             output_filename: Optional output filename
+            previous_video_file: Optional GenAI file reference to previous video to extend from
             
         Returns:
             VideoScene with file path and metadata
@@ -148,20 +193,48 @@ OUTPUT REQUIREMENT:
             
             logger.info(f"Generating video for scene {scene.scene_number}...")
             
+            # Prepare config for video generation
+            config = types.GenerateVideosConfig(
+                number_of_videos=1,
+                resolution="720p"
+            )
+            
             # Generate video (this is a blocking operation, so we run it in executor)
             loop = asyncio.get_event_loop()
-            operation = await loop.run_in_executor(
-                None,
-                lambda: self.client.models.generate_videos(
-                    model=self.model_name,
-                    prompt=veo_prompt,
+            
+            # If we have a previous video file, extend from it
+            if previous_video_file:
+                logger.info(f"Extending from previous video file...")
+                operation = await loop.run_in_executor(
+                    None,
+                    lambda: self.client.models.generate_videos(
+                        model=self.model_name,
+                        video=previous_video_file,
+                        prompt=veo_prompt,
+                        config=config
+                    )
                 )
-            )
+            else:
+                # Generate new video
+                operation = await loop.run_in_executor(
+                    None,
+                    lambda: self.client.models.generate_videos(
+                        model=self.model_name,
+                        prompt=veo_prompt,
+                        config=config
+                    )
+                )
             
             # Poll for completion
             operation = await loop.run_in_executor(
                 None,
                 lambda: self._poll_operation(operation)
+            )
+            
+            # Get video file reference from operation (for potential extension)
+            video_file = await loop.run_in_executor(
+                None,
+                lambda: self._get_video_file_from_operation(operation)
             )
             
             # Download video
@@ -178,6 +251,9 @@ OUTPUT REQUIREMENT:
                 transcript_text=scene.transcript_text
             )
             
+            # Store video file reference for potential extension
+            video_scene.video_file = video_file  # type: ignore
+            
             logger.info(f"Video generated for scene {scene.scene_number}: {video_path}")
             return video_scene
             
@@ -190,30 +266,71 @@ OUTPUT REQUIREMENT:
         scenes: List[SceneDescription]
     ) -> VideoGenerationResponse:
         """
-        Generate videos for all scenes.
+        Generate videos for all scenes by extending a single video.
+        
+        Instead of generating independent videos, this method:
+        1. Generates the first video normally
+        2. For subsequent scenes, extends the previous video using frame interpolation
         
         Args:
             scenes: List of scene descriptions
             
         Returns:
-            VideoGenerationResponse with all generated videos
+            VideoGenerationResponse with all generated videos (actually one extended video)
         """
         try:
-            logger.info(f"Generating {len(scenes)} video clips...")
+            if not scenes:
+                raise ValueError("No scenes provided")
             
-            # Generate videos sequentially (Veo API may have rate limits)
-            video_scenes = []
-            for scene in scenes:
-                video_scene = await self.generate_video(scene)
-                video_scenes.append(video_scene)
+            logger.info(f"Generating extended video from {len(scenes)} scenes...")
             
-            total_duration = sum(vs.duration for vs in video_scenes)
+            # Generate first video normally
+            first_scene = scenes[0]
+            logger.info(f"Generating initial video for scene {first_scene.scene_number}...")
+            first_video = await self.generate_video(first_scene)
+            current_video_file = getattr(first_video, 'video_file', None)
+            video_scenes = [first_video]
+            total_duration = first_video.duration
             
-            logger.info(f"Generated {len(video_scenes)} video clips, total duration: {total_duration}s")
-            return VideoGenerationResponse(
-                video_scenes=video_scenes,
-                total_duration=total_duration
-            )
+            # For subsequent scenes, extend the video using the previous video file
+            for i, scene in enumerate(scenes[1:], start=2):
+                logger.info(f"Extending video for scene {scene.scene_number} ({i}/{len(scenes)})...")
+                
+                if not current_video_file:
+                    raise ValueError(f"No video file reference available from previous video for scene {scene.scene_number}")
+                
+                # Generate extended video using the previous video file reference
+                # This extends the video seamlessly using Veo's extension feature
+                extended_video = await self.generate_video(
+                    scene,
+                    previous_video_file=current_video_file,
+                    output_filename=f"extended_scene_{scene.scene_number}.mp4"
+                )
+                
+                # The extended video continues from where the previous one left off
+                video_scenes.append(extended_video)
+                total_duration += extended_video.duration
+                
+                # Update current video file reference for next iteration
+                current_video_file = getattr(extended_video, 'video_file', None)
+            
+            # When extending videos, the final video contains all previous content
+            # So we only return the final extended video to avoid duplication
+            if len(video_scenes) > 1:
+                logger.info(f"Extended video created with {len(scenes)} scenes. Using final extended video only.")
+                final_video = video_scenes[-1]
+                # Update the scene number to reflect it's the complete video
+                final_video.scene_number = 1
+                return VideoGenerationResponse(
+                    video_scenes=[final_video],
+                    total_duration=total_duration
+                )
+            else:
+                logger.info(f"Generated video with duration: {total_duration}s")
+                return VideoGenerationResponse(
+                    video_scenes=video_scenes,
+                    total_duration=total_duration
+                )
             
         except Exception as e:
             logger.error(f"Error generating videos: {str(e)}")
