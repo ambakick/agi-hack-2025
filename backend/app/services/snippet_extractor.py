@@ -126,10 +126,31 @@ IMPORTANT:
                     temperature=0.7,
                     max_output_tokens=8000,  # Increased to avoid truncation
                     response_mime_type="application/json",
+                    response_schema={
+                        "type": "object",
+                        "properties": {
+                            "snippets": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {"type": "string"},
+                                        "start_time": {"type": "number"},
+                                        "end_time": {"type": "number"},
+                                        "context": {"type": "string"},
+                                        "reason": {"type": "string"}
+                                    },
+                                    "required": ["text", "start_time", "end_time", "context", "reason"]
+                                }
+                            }
+                        },
+                        "required": ["snippets"]
+                    }
                 )
             )
             
-            result = self._parse_json_response(response.text)
+            # With response_schema, the response should already be valid JSON
+            result = json.loads(response.text)
             
             snippets = [
                 Snippet(**snippet) for snippet in result.get('snippets', [])

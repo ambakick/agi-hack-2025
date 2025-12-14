@@ -127,11 +127,32 @@ Return ONLY valid JSON, no additional text.
                 prompt,
                 generation_config=genai.GenerationConfig(
                     temperature=0.8,
-                    max_output_tokens=6000,
+                    max_output_tokens=8000,
+                    response_mime_type="application/json",
+                    response_schema={
+                        "type": "object",
+                        "properties": {
+                            "scenes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "scene_number": {"type": "integer"},
+                                        "visual_prompt": {"type": "string"},
+                                        "transcript_text": {"type": "string"},
+                                        "duration": {"type": "number"}
+                                    },
+                                    "required": ["scene_number", "visual_prompt", "transcript_text", "duration"]
+                                }
+                            }
+                        },
+                        "required": ["scenes"]
+                    }
                 )
             )
             
-            result = self._parse_json_response(response.text)
+            # With response_schema, the response should already be valid JSON
+            result = json.loads(response.text)
             
             scenes = [
                 SceneDescription(**scene) for scene in result.get('scenes', [])

@@ -235,12 +235,6 @@ OUTPUT REQUIREMENT:
             logger.info(f"Prompt length: {len(veo_prompt)} characters")
             logger.info(f"Using model: {self.model_name}")
             
-            # Prepare config for video generation
-            config = types.GenerateVideosConfig(
-                number_of_videos=1,
-                resolution="720p"
-            )
-            
             # Generate video (this is a blocking operation, so we run it in executor)
             loop = asyncio.get_event_loop()
             
@@ -254,18 +248,16 @@ OUTPUT REQUIREMENT:
                             model=self.model_name,
                             video=previous_video_file,
                             prompt=veo_prompt,
-                            config=config
                         )
                     )
                 else:
-                    # Generate new video
-                    logger.info(f"Calling Veo API to generate new video...")
+                    # Generate new video - match notebook exactly (no config)
+                    logger.info(f"Calling Veo API to generate new video (no config, matching notebook)...")
                     operation = await loop.run_in_executor(
                         None,
                         lambda: self.client.models.generate_videos(
                             model=self.model_name,
                             prompt=veo_prompt,
-                            config=config
                         )
                     )
                     logger.info(f"Veo API call successful, operation created: {operation.name if hasattr(operation, 'name') else 'unknown'}")
