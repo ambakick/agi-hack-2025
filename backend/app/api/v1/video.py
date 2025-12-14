@@ -2,7 +2,7 @@
 
 import logging
 from fastapi import APIRouter, HTTPException
-from typing import List
+from typing import List, Optional
 from app.core.config import settings
 from app.models.schemas import (
     TranscriptInput,
@@ -37,6 +37,21 @@ veo_service = VeoService(settings.gemini_api_key)
 audio_service = VideoAudioService(settings.elevenlabs_api_key)
 video_stitcher = VideoStitcher()
 audio_sync = AudioSync()
+
+def _normalize_voice_id(voice_id: Optional[str]) -> Optional[str]:
+    """
+    Normalize user-provided voice_id values.
+
+    Frontends sometimes send the literal string "default" to mean "use whatever
+    the backend's default voice is". ElevenLabs expects a real voice_id, so we
+    map sentinel/blank values to None to trigger our service defaults.
+    """
+    if voice_id is None:
+        return None
+    normalized = voice_id.strip()
+    if normalized == "" or normalized.lower() == "default":
+        return None
+    return normalized
 
 
 @router.post("/extract-snippets", response_model=SnippetExtractionResponse)
@@ -106,7 +121,7 @@ async def generate_videos(scenes: List[SceneDescription]):
 @router.post("/generate-audio", response_model=AudioGenerationResponse)
 async def generate_audio(
     scenes: List[SceneDescription],
-    voice_id: str = None
+    voice_id: Optional[str] = None
 ):
     """
     Generate audio clips using ElevenLabs.
@@ -119,7 +134,8 @@ async def generate_audio(
         AudioGenerationResponse with generated audio clips
     """
     try:
-        result = await audio_service.generate_audio_clips(scenes, voice_id=voice_id)
+        normalized_voice_id = _normalize_voice_id(voice_id)
+        result = await audio_service.generate_audio_clips(scenes, voice_id=normalized_voice_id)
         return result
     except Exception as e:
         logger.error(f"Error generating audio: {str(e)}")
@@ -174,7 +190,8 @@ async def add_audio(request: AudioSyncRequest):
 @router.post("/generate-video", response_model=VideoGenerationFullResponse)
 async def generate_video(request: VideoGenerationRequest):
     """
-    Full pipeline: Extract snippets, generate scenes, create videos and audio, stitch, and sync.
+    Video-only pipeline: Extract snippets, generate scenes, generate videos, and stitch.
+    (No ElevenLabs audio generation / no audio sync.)
     
     Args:
         request: VideoGenerationRequest with transcript
@@ -183,7 +200,7 @@ async def generate_video(request: VideoGenerationRequest):
         VideoGenerationFullResponse with complete pipeline results
     """
     try:
-        logger.info("Starting full video generation pipeline...")
+        logger.info("Starting video-only generation pipeline...")
         
         # Step 1: Extract snippets
         transcript_input = TranscriptInput(
@@ -192,7 +209,8 @@ async def generate_video(request: VideoGenerationRequest):
         )
         snippets_response = await snippet_extractor.extract_snippets(
             transcript_input,
-            max_snippets=request.max_snippets or 5
+            # Default to 1 snippet because we only want a single short clip.
+            max_snippets=request.max_snippets or 1
         )
         snippets = snippets_response.snippets
         logger.info(f"Extracted {len(snippets)} snippets")
@@ -201,43 +219,34 @@ async def generate_video(request: VideoGenerationRequest):
         scenes_response = await scene_generator.generate_scenes(snippets)
         scenes = scenes_response.scenes
         logger.info(f"Generated {len(scenes)} scenes")
+
+        # We only want a single ~15s clip total.
+        if not scenes:
+            raise ValueError("No scenes generated")
+        scenes = scenes[:1]
+        scenes[0].duration = 15
+        logger.info("Using 1 scene, targeting 15s duration")
         
-        # Step 3: Generate videos (parallel with audio)
+        # Step 3: Generate videos
         videos_response = await veo_service.generate_videos(scenes)
         video_scenes = videos_response.video_scenes
         logger.info(f"Generated {len(video_scenes)} video clips")
         
-        # Step 4: Generate audio
-        audio_response = await audio_service.generate_audio_clips(
-            scenes,
-            voice_id=request.voice_id
-        )
-        audio_scenes = audio_response.audio_scenes
-        logger.info(f"Generated {len(audio_scenes)} audio clips")
-        
-        # Step 5: Stitch videos
-        video_paths = [vs.file_path for vs in video_scenes]
-        stitched_response = await video_stitcher.stitch_videos(video_paths)
-        stitched_video_path = stitched_response.stitched_video_path
-        logger.info(f"Stitched videos: {stitched_video_path}")
-        
-        # Step 6: Combine audio clips and sync with video
-        audio_paths = [as_.file_path for as_ in audio_scenes]
-        final_response = await audio_sync.sync_multiple_audio(
-            stitched_video_path,
-            audio_paths
-        )
-        final_video_path = final_response.final_video_path
-        logger.info(f"Final video with audio: {final_video_path}")
+        # VeoService.generate_videos returns a single extended video (final output),
+        # so stitching is unnecessary (and can break across MoviePy versions).
+        if not video_scenes:
+            raise ValueError("No video scenes returned from Veo")
+        final_video_path = video_scenes[0].file_path
+        logger.info(f"Final silent video (from Veo): {final_video_path}")
         
         return VideoGenerationFullResponse(
             snippets=snippets,
             scenes=scenes,
             video_scenes=video_scenes,
-            audio_scenes=audio_scenes,
-            stitched_video_path=stitched_video_path,
+            audio_scenes=[],
+            stitched_video_path=None,
             final_video_path=final_video_path,
-            total_duration=final_response.duration
+            total_duration=15
         )
         
     except Exception as e:

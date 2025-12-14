@@ -104,8 +104,7 @@ export function AudioNode({ id, data }: AudioNodeProps) {
 
       const request: VideoGenerationRequest = {
         transcript,
-        voice_id: "default", // Use default voice
-        max_snippets: 4,
+        max_snippets: 1,
       };
 
       const result = await generateVideo(request);

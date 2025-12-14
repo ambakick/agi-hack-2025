@@ -115,8 +115,14 @@ class VeoService:
             videos = operation.response.generated_videos
             logger.info(f"Generated videos count: {len(videos) if videos else 0}")
             
-            if not videos:
-                raise ValueError("No generated videos found in response")
+            if not videos or len(videos) == 0:
+                logger.error("⚠️  VEO API ACCESS REQUIRED ⚠️")
+                logger.error("The Veo API completed the operation but returned no videos.")
+                logger.error("This typically means:")
+                logger.error("1. Your Google Cloud project is not allowlisted for Veo 3.1")
+                logger.error("2. Apply for access at: https://ai.google.dev/gemini-api/docs/video-generation")
+                logger.error("3. Or check if your API key has Veo permissions enabled")
+                raise ValueError("Veo API access required: No generated videos returned. Please apply for Veo 3.1 access at https://ai.google.dev/gemini-api/docs/video-generation")
             
             generated_video = videos[0]
             logger.info(f"Video file retrieved successfully")
@@ -292,7 +298,7 @@ OUTPUT REQUIREMENT:
             )
             
             # Store video file reference for potential extension
-            video_scene.video_file = video_file  # type: ignore
+            video_scene.video_file = video_file
             
             logger.info(f"Video generated for scene {scene.scene_number}: {video_path}")
             return video_scene

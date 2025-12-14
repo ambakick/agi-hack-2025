@@ -16,9 +16,7 @@ type VideoStage =
   | 'extracting' 
   | 'scenes' 
   | 'videos' 
-  | 'audio' 
-  | 'stitching' 
-  | 'syncing' 
+  | 'finalizing'
   | 'done' 
   | 'error';
 
@@ -45,7 +43,7 @@ export function VideoStep({ script, onBack }: VideoStepProps) {
         const result = await generateVideo({
           transcript,
           transcript_format: 'plain',
-          max_snippets: 5,
+          max_snippets: 1,
         });
         
         setProgress(result);
@@ -54,12 +52,8 @@ export function VideoStep({ script, onBack }: VideoStepProps) {
         // In reality, the backend returns the final result, but we can show intermediate stages
         setStage('videos');
         await new Promise(resolve => setTimeout(resolve, 500));
-        setStage('audio');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setStage('stitching');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setStage('syncing');
-        await new Promise(resolve => setTimeout(resolve, 500));
+        setStage('finalizing');
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Get the final video URL
         const finalVideoUrl = getVideoUrl(result.final_video_path);
@@ -132,9 +126,7 @@ export function VideoStep({ script, onBack }: VideoStepProps) {
       extracting: 'Extracting interesting snippets...',
       scenes: 'Generating scene descriptions...',
       videos: 'Generating video clips with Veo 3.1...',
-      audio: 'Generating audio clips with ElevenLabs...',
-      stitching: 'Stitching video clips together...',
-      syncing: 'Synchronizing audio with video...',
+      finalizing: 'Finalizing video...',
       done: 'Video generation complete!',
       error: 'Error generating video',
     };
@@ -154,9 +146,7 @@ export function VideoStep({ script, onBack }: VideoStepProps) {
               {stage === 'extracting' && 'Analyzing transcript for interesting moments...'}
               {stage === 'scenes' && 'Creating 8-second visual scenes...'}
               {stage === 'videos' && 'Generating cinematic video clips (this may take 5-10 minutes)...'}
-              {stage === 'audio' && 'Creating natural voice audio...'}
-              {stage === 'stitching' && 'Combining video clips...'}
-              {stage === 'syncing' && 'Perfecting audio-video synchronization...'}
+              {stage === 'finalizing' && 'Preparing final video output...'}
             </p>
             {progress && (
               <div className="mt-6 space-y-2 text-left">
@@ -171,10 +161,6 @@ export function VideoStep({ script, onBack }: VideoStepProps) {
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   {progress.video_scenes.length > 0 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                   <span>{progress.video_scenes.length} video clips created</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  {progress.audio_scenes.length > 0 && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                  <span>{progress.audio_scenes.length} audio clips created</span>
                 </div>
               </div>
             )}
@@ -213,7 +199,7 @@ export function VideoStep({ script, onBack }: VideoStepProps) {
             Your Video Podcast is Ready!
           </CardTitle>
           <CardDescription>
-            Cinematic video generated with Google Veo 3.1 and ElevenLabs
+            Cinematic silent video generated with Google Veo 3.1
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -285,10 +271,6 @@ export function VideoStep({ script, onBack }: VideoStepProps) {
                   <div>
                     <span className="text-gray-600">Video Clips:</span>
                     <span className="ml-2 font-medium">{progress.video_scenes.length}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Audio Clips:</span>
-                    <span className="ml-2 font-medium">{progress.audio_scenes.length}</span>
                   </div>
                 </div>
               </div>

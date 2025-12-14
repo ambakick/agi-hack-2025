@@ -3,12 +3,38 @@
 import logging
 from pathlib import Path
 from typing import List
-from moviepy import VideoFileClip, concatenate_videoclips
+
+# MoviePy API differs across major versions:
+# - MoviePy 1.x: clip.resize(...), clip.crop(...)
+# - MoviePy 2.x: clip.resized(...), clip.cropped(...)
+# Imports also differ depending on install.
+try:
+    # MoviePy 1.x common import path
+    from moviepy.editor import VideoFileClip, concatenate_videoclips  # type: ignore
+except Exception:  # pragma: no cover
+    from moviepy import VideoFileClip, concatenate_videoclips  # type: ignore
+
 from app.models.schemas import VideoStitchRequest, VideoStitchResponse
 from app.core.config import settings
 from app.utils.video_utils import ensure_directory, get_output_path
 
 logger = logging.getLogger(__name__)
+
+def _resize_clip(clip, **kwargs):
+    """Version-tolerant resize helper for MoviePy."""
+    if hasattr(clip, "resize"):
+        return clip.resize(**kwargs)
+    if hasattr(clip, "resized"):
+        return clip.resized(**kwargs)
+    raise AttributeError("MoviePy clip has neither resize() nor resized()")
+
+def _crop_clip(clip, **kwargs):
+    """Version-tolerant crop helper for MoviePy."""
+    if hasattr(clip, "crop"):
+        return clip.crop(**kwargs)
+    if hasattr(clip, "cropped"):
+        return clip.cropped(**kwargs)
+    raise AttributeError("MoviePy clip has neither crop() nor cropped()")
 
 
 class VideoStitcher:
@@ -58,11 +84,11 @@ class VideoStitcher:
                 
                 if clip.w != target_width or clip.h != target_height:
                     # Resize maintaining aspect ratio, then crop to exact size
-                    clip = clip.resize(height=target_height)
+                    clip = _resize_clip(clip, height=target_height)
                     if clip.w != target_width:
                         # Crop horizontally to center
                         x_center = clip.w / 2
-                        clip = clip.crop(x_center=x_center, width=target_width)
+                        clip = _crop_clip(clip, x_center=x_center, width=target_width)
                 
                 clips.append(clip)
             

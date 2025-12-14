@@ -1,6 +1,6 @@
 """Pydantic schemas for API requests and responses."""
 from pydantic import BaseModel, Field
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
 from enum import Enum
 
 
@@ -185,6 +185,7 @@ class VideoScene(BaseModel):
     file_path: str = Field(..., description="Path to video file")
     duration: float = Field(..., description="Video duration in seconds")
     transcript_text: str = Field(..., description="Matching transcript text")
+    video_file: Optional[Any] = Field(None, description="GenAI file reference for video extension", exclude=True)
 
 
 class VideoGenerationResponse(BaseModel):
@@ -245,7 +246,7 @@ class VideoGenerationRequest(BaseModel):
     )
     voice_id: Optional[str] = Field(
         None,
-        description="ElevenLabs voice ID (optional, uses default if not provided)"
+        description='ElevenLabs voice ID (optional). If omitted/blank/"default", the backend uses its default voice.'
     )
     max_snippets: Optional[int] = Field(
         None,
@@ -258,8 +259,8 @@ class VideoGenerationFullResponse(BaseModel):
     snippets: List[Snippet] = Field(..., description="Extracted snippets")
     scenes: List[SceneDescription] = Field(..., description="Generated scenes")
     video_scenes: List[VideoScene] = Field(..., description="Generated video clips")
-    audio_scenes: List[AudioScene] = Field(..., description="Generated audio clips")
+    audio_scenes: List[AudioScene] = Field(default_factory=list, description="Generated audio clips (empty for video-only pipeline)")
     stitched_video_path: Optional[str] = Field(None, description="Stitched video path")
-    final_video_path: str = Field(..., description="Final video with audio")
+    final_video_path: str = Field(..., description="Final video path (silent unless audio is added separately)")
     total_duration: float = Field(..., description="Total duration in seconds")
 

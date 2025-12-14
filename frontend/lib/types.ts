@@ -172,7 +172,7 @@ export interface VideoGenerationFullResponse {
   snippets: Snippet[];
   scenes: SceneDescription[];
   video_scenes: VideoScene[];
-  audio_scenes: AudioScene[];
+  audio_scenes?: AudioScene[];
   stitched_video_path?: string;
   final_video_path: string;
   total_duration: number;
