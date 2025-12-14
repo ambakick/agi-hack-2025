@@ -15,7 +15,7 @@ You are working on an AI-powered podcast generation system that creates complete
 
 ## Core Technologies
 - **LLM**: Google Gemini 3 (content analysis, script writing, show notes)
-- **TTS**: ElevenLabs (natural voice synthesis)
+- **TTS**: Google Cloud Text-to-Speech (natural voice synthesis with Neural2 voices)
 - **Video**: Google Veo + Remotion (visual generation)
 - **Data Source**: YouTube Data API (English podcasts only)
 
@@ -27,7 +27,7 @@ You are working on an AI-powered podcast generation system that creates complete
 5. Outline Generation (Gemini + human)
 6. Script Writing (Gemini 3)
 7. Fact-Checking (optional)
-8. Text-to-Speech (ElevenLabs)
+8. Text-to-Speech (Google Cloud TTS)
 9. Video Generation (Veo + Remotion)
 10. Show Notes (Gemini)
 11. Final Assembly

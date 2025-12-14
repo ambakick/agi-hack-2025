@@ -22,8 +22,8 @@ protobuf>=4.25.0,<5.0.0
 # YouTube Transcripts
 youtube-transcript-api>=0.6.2
 
-# ElevenLabs TTS
-elevenlabs>=1.0.0
+# Google Cloud Text-to-Speech
+google-cloud-texttospeech>=2.14.0
 
 # Template Engine
 jinja2>=3.1.0

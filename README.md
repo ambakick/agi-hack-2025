@@ -2,7 +2,7 @@
 
 > Gemini AGI Hackathon - December 2025
 
-An AI-powered system that generates complete podcast episodes from a topic prompt, leveraging Google Gemini 3 for content creation, ElevenLabs for natural voice synthesis, and Google Veo for cinematic video generation.
+An AI-powered system that generates complete podcast episodes from a topic prompt, leveraging Google Gemini 3 for content creation, Google Cloud Text-to-Speech for natural voice synthesis, and Google Veo for cinematic video generation.
 
 ## System Architecture
 
@@ -26,7 +26,7 @@ flowchart TB
     end
     
     subgraph mediaGen [Media Generation]
-        TTS[ElevenLabs TTS]
+        TTS[Google Cloud TTS]
         VeoVideo[Google Veo Video Gen]
         Remotion[Remotion Visual Assembly]
     end
@@ -59,7 +59,7 @@ flowchart TB
 |-----------|------------|
 | Content Discovery | YouTube Data API |
 | AI Processing | Google Gemini 3 |
-| Text-to-Speech | ElevenLabs API |
+| Text-to-Speech | Google Cloud Text-to-Speech API (Neural2 voices) |
 | Video Generation | Google Veo (Vertex AI / VideoFX) |
 | Video Assembly | Remotion (React) |
 
@@ -118,14 +118,14 @@ This step ensures the final content is trustworthy and not just parroting potent
 
 ### 8. Text-to-Speech Conversion
 
-Once the script is finalized, the **ElevenLabs API** is used to convert it to speech. ElevenLabs offers extremely natural-sounding voices that are nearly indistinguishable from real human hosts.
+Once the script is finalized, the **Google Cloud Text-to-Speech API** is used to convert it to speech. Google's Neural2 voices offer extremely natural-sounding speech that closely resembles real human hosts.
 
 The process:
-1. Send the script text (possibly broken into segments) to the ElevenLabs TTS endpoint
-2. Receive audio files (MP3 or WAV) for each segment or the whole script
-3. Choose single narrator or multiple voices for dialog feel
+1. Send the script text (possibly broken into segments) to the Google TTS endpoint
+2. Receive audio files (MP3) for each segment or the whole script
+3. Choose single narrator or multiple Neural2 voices for dialog feel
 
-ElevenLabs supports custom voice cloning, but built-in high-quality voices work well. The result is a podcast audio track with realistic narration.
+Google Cloud TTS provides high-quality Neural2 voices with excellent prosody and naturalness. The result is a podcast audio track with realistic narration.
 
 ### 9. Video Generation with Google Veo
 
@@ -151,7 +151,7 @@ With audio ready, **Remotion** (or a similar programmatic video tool) generates 
 Remotion allows defining React components for each scene/slide and programmatically rendering a video file:
 - Create components like `<IntroScene>`, `<TopicSlide>`, `<OutroScene>`
 - Each component displays text and images timed to the audio
-- Audio track from ElevenLabs added as a layer for synchronization
+- Audio track from Google Cloud TTS added as a layer for synchronization
 - Transitions occur at segment boundaries
 
 #### Automation with AI
@@ -228,12 +228,12 @@ See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for complete implementation details
 
 - **YouTube Data API** - For searching and retrieving podcast content
 - **Google Gemini API** - For content analysis and script generation
-- **ElevenLabs API** - For text-to-speech conversion
+- **Google Cloud Text-to-Speech API** - For text-to-speech conversion
 
 Get your API keys:
 - [YouTube Data API](https://console.cloud.google.com/)
 - [Google Gemini](https://makersuite.google.com/app/apikey)
-- [ElevenLabs](https://elevenlabs.io/)
+- [Google Cloud TTS](https://console.cloud.google.com/)
 
 ## Implementation Status
 
@@ -244,7 +244,7 @@ Get your API keys:
 - Content Analysis (Gemini)
 - Outline Generation
 - Script Writing (Single & Multi-host)
-- Text-to-Speech Conversion (ElevenLabs)
+- Text-to-Speech Conversion (Google Cloud TTS)
 - Complete Frontend Wizard
 - Audio Playback & Download
 
@@ -261,7 +261,7 @@ Get your API keys:
 - FastAPI (Python 3.11+)
 - Google Gemini 3
 - YouTube Data API
-- ElevenLabs API
+- Google Cloud Text-to-Speech API
 
 **Frontend:**
 - Next.js 14

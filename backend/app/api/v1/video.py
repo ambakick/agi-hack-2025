@@ -34,7 +34,7 @@ router = APIRouter()
 snippet_extractor = SnippetExtractor(settings.gemini_api_key)
 scene_generator = SceneGenerator(settings.gemini_api_key)
 veo_service = VeoService(settings.gemini_api_key)
-audio_service = VideoAudioService(settings.elevenlabs_api_key)
+audio_service = VideoAudioService(settings.google_tts_api_key)
 video_stitcher = VideoStitcher()
 audio_sync = AudioSync()
 

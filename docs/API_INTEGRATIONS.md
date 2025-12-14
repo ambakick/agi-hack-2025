@@ -408,182 +408,227 @@ except Exception as e:
 
 ---
 
-## ElevenLabs API
+## Google Cloud Text-to-Speech API
 
 ### Overview
-Text-to-speech service for generating podcast narration.
+High-quality text-to-speech service from Google Cloud, offering Neural2 voices with natural-sounding speech for podcast narration.
 
 ### Setup
-1. Sign up at https://elevenlabs.io
-2. Get API key from dashboard
-3. Choose subscription plan (free tier available)
+1. Create a Google Cloud Project at https://console.cloud.google.com
+2. Enable the Cloud Text-to-Speech API
+3. Create an API key or service account credentials
+4. Install the Python client library: `pip install google-cloud-texttospeech`
 
 ### Authentication
-```python
-import requests
 
-ELEVENLABS_API_KEY = "your_api_key"
-headers = {
-    "xi-api-key": ELEVENLABS_API_KEY,
-    "Content-Type": "application/json"
-}
+**Option 1: API Key (Recommended for Development)**
+```python
+from google.cloud import texttospeech
+from google.api_core import client_options as client_options_lib
+
+GOOGLE_TTS_API_KEY = "your_api_key"
+client_opts = client_options_lib.ClientOptions(api_key=GOOGLE_TTS_API_KEY)
+client = texttospeech.TextToSpeechClient(client_options=client_opts)
 ```
 
-### Key Endpoints
+**Option 2: Service Account (Recommended for Production)**
+```python
+from google.cloud import texttospeech
+import os
+
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'path/to/service-account-key.json'
+client = texttospeech.TextToSpeechClient()
+```
+
+### Key Operations
 
 #### 1. List Available Voices
-**Endpoint**: `GET https://api.elevenlabs.io/v1/voices`
-
 ```python
-response = requests.get(
-    "https://api.elevenlabs.io/v1/voices",
-    headers={"xi-api-key": ELEVENLABS_API_KEY}
-)
-voices = response.json()['voices']
+# List all available voices
+response = client.list_voices(language_code="en-US")
 
-# Example voice structure:
-# {
-#   "voice_id": "21m00Tcm4TlvDq8ikWAM",
-#   "name": "Rachel",
-#   "category": "premade",
-#   "labels": {"accent": "american", "age": "young"}
-# }
+for voice in response.voices:
+    # Filter for Neural2 voices (highest quality)
+    if "Neural2" in voice.name:
+        print(f"Name: {voice.name}")
+        print(f"Gender: {texttospeech.SsmlVoiceGender(voice.ssml_gender).name}")
+        print(f"Languages: {', '.join(voice.language_codes)}")
+        print(f"Sample Rate: {voice.natural_sample_rate_hertz}Hz")
+        print("---")
 ```
 
-**Popular Voices**:
-- Rachel: Professional, versatile
-- Adam: Deep, authoritative
-- Antoni: Well-rounded, friendly
-- Bella: Soft, calming
+**Recommended Neural2 Voices for Podcasts**:
+- **en-US-Neural2-F**: Female, warm and professional
+- **en-US-Neural2-J**: Male, conversational and friendly
+- **en-US-Neural2-C**: Female, confident and clear
+- **en-US-Neural2-D**: Male, authoritative and deep
+- **en-US-Neural2-A**: Male, versatile and natural
 
 #### 2. Text-to-Speech Conversion
-**Endpoint**: `POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}`
-
 ```python
-voice_id = "21m00Tcm4TlvDq8ikWAM"  # Rachel
+def synthesize_speech(text: str, voice_name: str = "en-US-Neural2-F") -> bytes:
+    """Generate speech from text."""
+    
+    # Set the text input
+    synthesis_input = texttospeech.SynthesisInput(text=text)
+    
+    # Configure the voice
+    voice = texttospeech.VoiceSelectionParams(
+        language_code="en-US",
+        name=voice_name
+    )
+    
+    # Configure audio output
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3,
+        speaking_rate=1.0,  # 0.25 to 4.0
+        pitch=0.0,  # -20.0 to 20.0
+        sample_rate_hertz=24000
+    )
+    
+    # Perform the text-to-speech request
+    response = client.synthesize_speech(
+        input=synthesis_input,
+        voice=voice,
+        audio_config=audio_config
+    )
+    
+    return response.audio_content
 
-data = {
-    "text": "Your podcast script here...",
-    "model_id": "eleven_monolingual_v1",  # or "eleven_multilingual_v2"
-    "voice_settings": {
-        "stability": 0.5,  # 0-1, higher = more consistent
-        "similarity_boost": 0.75,  # 0-1, higher = more like original voice
-        "style": 0.0,  # 0-1, for v2 models
-        "use_speaker_boost": True
-    }
-}
+# Use it
+audio_data = synthesize_speech("Welcome to our podcast on AI innovations!")
 
-response = requests.post(
-    f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
-    headers=headers,
-    json=data
-)
-
-# Save audio
+# Save to file
 with open("output.mp3", "wb") as f:
-    f.write(response.content)
+    f.write(audio_data)
 ```
 
-#### 3. Streaming Audio
+#### 3. Multi-Voice Podcast (Dialog)
 ```python
-response = requests.post(
-    f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream",
-    headers=headers,
-    json=data,
-    stream=True
-)
+def generate_multi_host_audio(segments: List[dict]) -> bytes:
+    """Generate audio with multiple voices for dialog-style podcasts."""
+    
+    audio_parts = []
+    
+    for segment in segments:
+        text = segment['text']
+        speaker = segment['speaker']  # 'HOST_1' or 'HOST_2'
+        
+        # Choose voice based on speaker
+        voice_name = "en-US-Neural2-F" if speaker == "HOST_1" else "en-US-Neural2-J"
+        
+        audio_data = synthesize_speech(text, voice_name)
+        audio_parts.append(audio_data)
+    
+    # Concatenate all audio segments
+    return b''.join(audio_parts)
 
-with open("output.mp3", "wb") as f:
-    for chunk in response.iter_content(chunk_size=1024):
-        if chunk:
-            f.write(chunk)
+# Example usage
+script_segments = [
+    {"speaker": "HOST_1", "text": "Welcome to the show!"},
+    {"speaker": "HOST_2", "text": "Thanks for having me!"},
+    {"speaker": "HOST_1", "text": "Let's dive into today's topic..."}
+]
+
+full_audio = generate_multi_host_audio(script_segments)
 ```
 
-### Voice Settings Tuning
+### Audio Configuration Options
 
-- **Stability** (0-1):
-  - Low (0-0.4): More expressive, variable
-  - Mid (0.5-0.7): Balanced
-  - High (0.8-1.0): Consistent, less emotional
+#### Speaking Rate
+- `0.25`: Very slow (accessibility)
+- `1.0`: Normal speed (default)
+- `1.2-1.5`: Slightly faster (common for podcasts)
+- `4.0`: Maximum speed
 
-- **Similarity Boost** (0-1):
-  - Low: More generic
-  - High: Closer to original voice sample
+#### Pitch
+- `-20.0`: Very low pitch
+- `0.0`: Natural pitch (default)
+- `20.0`: Very high pitch
 
-- **Style** (v2 models only, 0-1):
-  - Controls stylistic variation
+#### Sample Rate
+- `24000`: Standard quality (recommended for podcasts)
+- `44100`: CD quality
+- `48000`: Professional audio
 
-### Character Limits
-- **Free tier**: ~10,000 characters/month
-- **Starter**: ~30,000 characters/month
-- **Creator**: ~100,000 characters/month
-- **Pro**: ~500,000 characters/month
+### Character Limits & Quotas
+- **Maximum text length per request**: 5,000 characters
+- **Default quota**: 1 million characters/month (free tier)
+- **Pricing**: ~$16 per 1 million characters (Neural2 voices)
 
 **Strategy for long scripts**:
 ```python
-def split_script(script: str, max_chars: int = 5000) -> List[str]:
-    """Split script at sentence boundaries."""
-    sentences = script.split('. ')
+def split_text(text: str, max_chars: int = 4500) -> List[str]:
+    """Split text at sentence boundaries for TTS."""
+    sentences = text.split('. ')
     chunks = []
     current_chunk = ""
-
+    
     for sentence in sentences:
-        if len(current_chunk) + len(sentence) < max_chars:
+        if len(current_chunk) + len(sentence) + 2 <= max_chars:
             current_chunk += sentence + ". "
         else:
-            chunks.append(current_chunk.strip())
+            if current_chunk:
+                chunks.append(current_chunk.strip())
             current_chunk = sentence + ". "
-
+    
     if current_chunk:
         chunks.append(current_chunk.strip())
-
+    
     return chunks
 
-async def generate_audio_segments(script: str) -> List[bytes]:
-    chunks = split_script(script)
+async def generate_long_audio(text: str, voice_name: str) -> bytes:
+    """Generate audio for text longer than 5000 characters."""
+    chunks = split_text(text)
     audio_segments = []
-
+    
     for chunk in chunks:
-        audio = await text_to_speech(chunk, voice_id)
-        audio_segments.append(audio)
-
-    return audio_segments
-```
-
-### Concatenating Audio Files
-```python
-from pydub import AudioSegment
-
-def concatenate_audio(segments: List[str], output_path: str):
-    """Merge multiple audio files into one."""
-    combined = AudioSegment.empty()
-
-    for segment_path in segments:
-        audio = AudioSegment.from_mp3(segment_path)
-        combined += audio
-
-    combined.export(output_path, format="mp3")
+        audio_data = synthesize_speech(chunk, voice_name)
+        audio_segments.append(audio_data)
+    
+    return b''.join(audio_segments)
 ```
 
 ### Error Handling
 ```python
-response = requests.post(url, headers=headers, json=data)
+from google.api_core.exceptions import GoogleAPIError, InvalidArgument
 
-if response.status_code == 401:
-    # Invalid API key
-    raise Exception("Invalid ElevenLabs API key")
-elif response.status_code == 422:
-    # Validation error (text too long, invalid voice_id)
-    raise Exception(f"Invalid request: {response.json()}")
-elif response.status_code == 429:
-    # Rate limit / quota exceeded
-    raise Exception("ElevenLabs quota exceeded")
+try:
+    response = client.synthesize_speech(
+        input=synthesis_input,
+        voice=voice,
+        audio_config=audio_config
+    )
+    audio_data = response.audio_content
+    
+except InvalidArgument as e:
+    # Invalid voice name, language code, or text too long
+    print(f"Invalid request: {e}")
+    
+except GoogleAPIError as e:
+    # API error (quota exceeded, authentication failed, etc.)
+    print(f"Google API error: {e}")
+    
+except Exception as e:
+    # Other errors
+    print(f"Unexpected error: {e}")
 ```
 
-### Rate Limiting
-- Free tier: 3 requests/second
-- Paid tiers: Higher limits
-- Implement request queuing for multiple segments
+### Rate Limiting & Best Practices
+- **No strict rate limits** with proper API key setup
+- **Concurrent requests**: Supported, use async for parallel processing
+- **Caching**: Cache generated audio to avoid redundant API calls
+- **Error retry**: Implement exponential backoff for transient errors
+
+```python
+import asyncio
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+async def synthesize_with_retry(text: str, voice_name: str) -> bytes:
+    """Synthesize speech with automatic retry on failures."""
+    return synthesize_speech(text, voice_name)
+```
 
 ---
 
@@ -891,7 +936,7 @@ subprocess.run([
 - [ ] Enable YouTube Data API v3
 - [ ] Get YouTube API key
 - [ ] Get Google Gemini API key (AI Studio or Vertex AI)
-- [ ] Sign up for ElevenLabs, get API key
+- [ ] Enable Google Cloud Text-to-Speech API, get API key
 - [ ] Request Veo access (Vertex AI)
 - [ ] Install Remotion
 - [ ] Set up environment variables
@@ -901,7 +946,7 @@ subprocess.run([
 # .env file
 YOUTUBE_API_KEY=your_youtube_key
 GEMINI_API_KEY=your_gemini_key
-ELEVENLABS_API_KEY=your_elevenlabs_key
+GOOGLE_TTS_API_KEY=your_google_tts_key
 
 # For Vertex AI
 GOOGLE_CLOUD_PROJECT=your_project_id
@@ -922,9 +967,9 @@ async def test_all_apis():
     response = await gemini_service.test_connection()
     print("✓ Gemini: Connected")
 
-    # Test ElevenLabs
-    audio = await elevenlabs_service.text_to_speech("Test", voice_id)
-    print("✓ ElevenLabs: Generated audio")
+    # Test Google TTS
+    audio = await google_tts_service.generate_audio("Test", voice_name)
+    print("✓ Google TTS: Generated audio")
 
     # Test Veo
     video = await veo_service.generate_video(test_prompt)
@@ -938,6 +983,6 @@ async def test_all_apis():
 - **YouTube Data API**: https://developers.google.com/youtube/v3
 - **Gemini API**: https://ai.google.dev/
 - **Vertex AI**: https://cloud.google.com/vertex-ai
-- **ElevenLabs Docs**: https://elevenlabs.io/docs
+- **Google Cloud TTS Docs**: https://cloud.google.com/text-to-speech/docs
 - **Remotion Docs**: https://www.remotion.dev/docs
 - **Veo Access**: Contact Google Cloud sales or check for updates

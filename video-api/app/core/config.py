@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # API Keys
     gemini_api_key: str
-    elevenlabs_api_key: str
+    google_tts_api_key: str
     
     # Server Configuration
     host: str = "0.0.0.0"

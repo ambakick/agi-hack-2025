@@ -2,7 +2,7 @@
 from app.core.config import settings
 from app.services.youtube import YouTubeService
 from app.services.gemini import GeminiService
-from app.services.elevenlabs import ElevenLabsService
+from app.services.google_tts import GoogleTTSService
 
 
 def get_youtube_service() -> YouTubeService:
@@ -15,7 +15,7 @@ def get_gemini_service() -> GeminiService:
     return GeminiService(api_key=settings.gemini_api_key)
 
 
-def get_elevenlabs_service() -> ElevenLabsService:
-    """Get ElevenLabs service instance."""
-    return ElevenLabsService(api_key=settings.elevenlabs_api_key)
+def get_google_tts_service() -> GoogleTTSService:
+    """Get Google TTS service instance."""
+    return GoogleTTSService(api_key=settings.google_tts_api_key)
 

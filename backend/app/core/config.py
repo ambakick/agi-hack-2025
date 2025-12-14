@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # API Keys
     youtube_api_key: str
     gemini_api_key: str
-    elevenlabs_api_key: str
+    google_tts_api_key: str
     graphon_api_key: str = ""
     
     # Server Configuration

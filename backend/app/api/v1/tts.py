@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from app.models.schemas import TTSRequest
-from app.services.elevenlabs import ElevenLabsService
-from app.api.v1.deps import get_elevenlabs_service
+from app.services.google_tts import GoogleTTSService
+from app.api.v1.deps import get_google_tts_service
 
 router = APIRouter()
 
@@ -12,20 +12,20 @@ router = APIRouter()
 @router.post("/tts")
 async def convert_to_speech(
     request: TTSRequest,
-    elevenlabs_service: ElevenLabsService = Depends(get_elevenlabs_service)
+    google_tts_service: GoogleTTSService = Depends(get_google_tts_service)
 ):
     """
     Convert podcast script to audio using text-to-speech.
     
     Args:
         request: TTS request with script and voice preferences
-        elevenlabs_service: ElevenLabs service instance
+        google_tts_service: Google TTS service instance
         
     Returns:
         Audio file as streaming response
     """
     try:
-        audio_data = await elevenlabs_service.generate_audio(
+        audio_data = await google_tts_service.generate_audio(
             script=request.script,
             voice_id_host1=request.voice_id_host1,
             voice_id_host2=request.voice_id_host2
@@ -51,16 +51,16 @@ async def convert_to_speech(
 
 @router.get("/voices")
 async def get_available_voices(
-    elevenlabs_service: ElevenLabsService = Depends(get_elevenlabs_service)
+    google_tts_service: GoogleTTSService = Depends(get_google_tts_service)
 ):
     """
-    Get list of available ElevenLabs voices.
+    Get list of available Google TTS voices.
     
     Returns:
         List of available voices
     """
     try:
-        voices = await elevenlabs_service.get_available_voices()
+        voices = await google_tts_service.get_available_voices()
         return {"voices": voices}
     
     except Exception as e:

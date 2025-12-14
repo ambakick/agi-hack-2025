@@ -1,7 +1,7 @@
 """Services module."""
 from .youtube import YouTubeService
 from .gemini import GeminiService
-from .elevenlabs import ElevenLabsService
+from .google_tts import GoogleTTSService
 
-__all__ = ["YouTubeService", "GeminiService", "ElevenLabsService"]
+__all__ = ["YouTubeService", "GeminiService", "GoogleTTSService"]
 

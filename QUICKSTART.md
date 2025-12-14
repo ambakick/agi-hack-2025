@@ -26,7 +26,7 @@ cp backend/env.example backend/.env
 # Edit .env with your API keys:
 # - YOUTUBE_API_KEY
 # - GEMINI_API_KEY
-# - ELEVENLABS_API_KEY
+# - GOOGLE_TTS_API_KEY
 
 # Start server
 uvicorn app.main:app --reload
