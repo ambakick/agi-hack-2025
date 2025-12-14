@@ -19,6 +19,8 @@ import type {
   AudioSyncResponse,
   Snippet,
   SceneDescription,
+  Source,
+  SourceType,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -38,6 +40,21 @@ export async function discoverVideos(topic: string, maxResults: number = 10): Pr
     language: 'en',
   });
   return response.data.videos;
+}
+
+// Source Upload API
+export async function uploadSource(file: File, sourceType: SourceType): Promise<Source> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('source_type', sourceType);
+
+  const response = await api.post('/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
 }
 
 // Transcripts API

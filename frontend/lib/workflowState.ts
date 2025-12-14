@@ -10,6 +10,7 @@ import type {
   OutlineResponse,
   ScriptResponse,
   PodcastFormat,
+  Source,
 } from "./types";
 
 export interface WorkflowNodeData {
@@ -19,7 +20,8 @@ export interface WorkflowNodeData {
   isLoading: boolean;
   topic?: string;
   format?: PodcastFormat;
-  videos?: VideoInfo[];
+  videos?: VideoInfo[]; // Legacy - keeping for backward compatibility
+  sources?: Source[]; // New multi-modal source support
   transcripts?: VideoTranscript[];
   analysis?: AnalysisResponse;
   outline?: OutlineResponse;
@@ -38,13 +40,22 @@ interface WorkflowState {
   generationState: GenerationState;
 }
 
+const getNodeType = (id: string): string => {
+  // Handle source nodes with numbered suffixes (e.g., "pdf-source-1" → "pdf-sourceNode")
+  if (id.match(/^(pdf|image|audio|video)-source-\d+$/)) {
+    const sourceType = id.split("-source-")[0];
+    return `${sourceType}-sourceNode`;
+  }
+  return `${id}Node`;
+};
+
 const createInitialNode = (
   id: string,
   position: { x: number; y: number },
   data: WorkflowNodeData
 ): Node<WorkflowNodeData> => ({
   id,
-  type: `${id}Node`,
+  type: getNodeType(id),
   position,
   data,
 });
@@ -54,6 +65,7 @@ export function useWorkflowState(initialTopic: string = "") {
     topic: initialTopic,
     format: "single" as PodcastFormat,
     selectedVideos: [],
+    sources: [],
     transcripts: [],
     analysis: null,
     outline: null,
@@ -99,13 +111,15 @@ export function useWorkflowState(initialTopic: string = "") {
     (
       nodeId: string,
       position: { x: number; y: number },
-      data: WorkflowNodeData
+      data: WorkflowNodeData,
+      skipAutoEdge: boolean = false
     ) => {
       const newNode = createInitialNode(nodeId, position, data);
 
       setNodes((prevNodes) => {
-        // Check if node already exists
-        if (prevNodes.find((n) => n.id === nodeId)) {
+        // Check if node already exists - if so, just update it without touching edges
+        const existingNode = prevNodes.find((n) => n.id === nodeId);
+        if (existingNode) {
           return prevNodes.map((node) =>
             node.id === nodeId ? newNode : node
           );
@@ -115,19 +129,22 @@ export function useWorkflowState(initialTopic: string = "") {
         const lastNode = prevNodes[prevNodes.length - 1];
         const updatedNodes = [...prevNodes, newNode];
         
-        // Add edge from previous node
-        setEdges((prevEdges) => {
-          if (prevEdges.length === 0) {
-            return [{ id: `e-topic-${nodeId}`, source: "topic", target: nodeId }];
-          }
-          if (lastNode) {
-            return [
-              ...prevEdges,
-              { id: `e-${lastNode.id}-${nodeId}`, source: lastNode.id, target: nodeId },
-            ];
-          }
-          return prevEdges;
-        });
+        // Add edge from previous node (unless skipAutoEdge is true)
+        // Only create edges when adding a NEW node
+        if (!skipAutoEdge) {
+          setEdges((prevEdges) => {
+            if (prevEdges.length === 0) {
+              return [{ id: `e-topic-${nodeId}`, source: "topic", target: nodeId }];
+            }
+            if (lastNode) {
+              return [
+                ...prevEdges,
+                { id: `e-${lastNode.id}-${nodeId}`, source: lastNode.id, target: nodeId },
+              ];
+            }
+            return prevEdges;
+          });
+        }
         
         return updatedNodes;
       });
@@ -176,6 +193,27 @@ export function useWorkflowState(initialTopic: string = "") {
     });
   }, []);
 
+  const addEdge = useCallback((source: string, target: string) => {
+    setEdges((prevEdges) => {
+      const edgeId = `e-${source}-${target}`;
+      // Don't add duplicate edges
+      if (prevEdges.find((e) => e.id === edgeId)) {
+        return prevEdges;
+      }
+      return [...prevEdges, { id: edgeId, source, target }];
+    });
+  }, []);
+
+  const getSourceNodes = useCallback(() => {
+    return nodes.filter((node) => 
+      node.id === "references" || 
+      node.id.startsWith("pdf-source-") ||
+      node.id.startsWith("image-source-") ||
+      node.id.startsWith("audio-source-") ||
+      node.id.startsWith("video-source-")
+    );
+  }, [nodes]);
+
   const state = useMemo<WorkflowState>(
     () => ({
       nodes,
@@ -194,6 +232,8 @@ export function useWorkflowState(initialTopic: string = "") {
     completeNode,
     removeNodesAfter,
     updateGenerationState,
+    addEdge,
+    getSourceNodes,
   };
 }
 

@@ -4,6 +4,36 @@ export enum PodcastFormat {
   TWO_HOSTS = 'two_hosts',
 }
 
+// Source Types (Multi-modal Support)
+export enum SourceType {
+  YOUTUBE = 'youtube',
+  IMAGE = 'image',
+  AUDIO = 'audio',
+  VIDEO = 'video',
+  PDF = 'pdf',
+}
+
+export interface Source {
+  id: string;
+  type: SourceType;
+  name: string;
+  thumbnail_url?: string;  // Preview image
+  file_path?: string;      // For uploaded files (backend path)
+  file_url?: string;       // For displaying uploaded files
+  metadata?: {
+    // YouTube-specific
+    video_id?: string;
+    channel_name?: string;
+    duration?: string;
+    view_count?: number;
+    published_at?: string;
+    // File-specific
+    file_size?: number;
+    mime_type?: string;
+    page_count?: number;  // For PDFs
+  };
+}
+
 // Video Discovery Types
 export interface VideoInfo {
   video_id: string;
@@ -74,7 +104,8 @@ export interface ScriptResponse {
 export interface GenerationState {
   topic: string;
   format: PodcastFormat;
-  selectedVideos: VideoInfo[];
+  selectedVideos: VideoInfo[]; // Legacy - keeping for backward compatibility
+  sources: Source[]; // New multi-modal source support
   transcripts: VideoTranscript[];
   analysis: AnalysisResponse | null;
   outline: OutlineResponse | null;

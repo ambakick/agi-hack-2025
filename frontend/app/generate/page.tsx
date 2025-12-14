@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ReactFlow, {
   Background,
@@ -15,24 +15,35 @@ import "reactflow/dist/style.css";
 import { useWorkflowState } from "@/lib/workflowState";
 import { TopicNode } from "@/components/workflow/TopicNode";
 import { ReferencesNode } from "@/components/workflow/ReferencesNode";
+import { PDFSourceNode } from "@/components/workflow/PDFSourceNode";
+import { ImageSourceNode } from "@/components/workflow/ImageSourceNode";
+import { AudioSourceNode } from "@/components/workflow/AudioSourceNode";
+import { VideoSourceNode } from "@/components/workflow/VideoSourceNode";
+import { AddSourceNode } from "@/components/workflow/AddSourceNode";
 import { OutlineNode } from "@/components/workflow/OutlineNode";
 import { ScriptNode } from "@/components/workflow/ScriptNode";
 import { AudioNode } from "@/components/workflow/AudioNode";
 import { EditModeIndicator } from "@/components/workflow/EditModeIndicator";
 import { ConfettiEffect } from "@/components/workflow/ConfettiEffect";
 import { WorkflowErrorBoundary } from "@/components/workflow/WorkflowErrorBoundary";
-import { PodcastFormat } from "@/lib/types";
+import { PodcastFormat, SourceType } from "@/lib/types";
 import type {
   VideoInfo,
   VideoTranscript,
   AnalysisResponse,
   OutlineResponse,
   ScriptResponse,
+  Source,
 } from "@/lib/types";
 
 const nodeTypes = {
   topicNode: TopicNode,
   referencesNode: ReferencesNode,
+  "pdf-sourceNode": PDFSourceNode,
+  "image-sourceNode": ImageSourceNode,
+  "audio-sourceNode": AudioSourceNode,
+  "video-sourceNode": VideoSourceNode,
+  addSourceNode: AddSourceNode,
   outlineNode: OutlineNode,
   scriptNode: ScriptNode,
   audioNode: AudioNode,
@@ -51,16 +62,32 @@ function WorkflowCanvas() {
     completeNode,
     removeNodesAfter,
     updateGenerationState,
+    addEdge,
+    getSourceNodes,
   } = useWorkflowState(initialTopic);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(state.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(state.edges);
+
+  // Track additional sources uploaded in AddSourceNode
+  const [additionalSources, setAdditionalSources] = useState<Source[]>([]);
 
   // Track latest state to avoid stale closure issues
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  // Refs for handlers to avoid circular dependencies
+  const handleContinueToOutlineRef = useRef<(sources: Source[]) => void>(
+    () => {}
+  );
+  const additionalSourcesRef = useRef(additionalSources);
+
+  // Keep refs in sync
+  useEffect(() => {
+    additionalSourcesRef.current = additionalSources;
+  }, [additionalSources]);
 
   // Track previous state to prevent unnecessary updates
   const prevStateRef = useRef<{
@@ -117,10 +144,10 @@ function WorkflowCanvas() {
   // Outline node completion handler
   const handleOutlineComplete = useCallback(
     (
-    transcripts: VideoTranscript[],
-    analysis: AnalysisResponse,
-    outline: OutlineResponse
-  ) => {
+      transcripts: VideoTranscript[],
+      analysis: AnalysisResponse,
+      outline: OutlineResponse
+    ) => {
       // Use ref to get latest state (avoids stale closure)
       const currentState = stateRef.current;
 
@@ -138,7 +165,8 @@ function WorkflowCanvas() {
           isCompleted: false,
           isLoading: false,
           topic: currentState.generationState.topic,
-          format: currentState.generationState.format || PodcastFormat.SINGLE_HOST,
+          format:
+            currentState.generationState.format || PodcastFormat.SINGLE_HOST,
           outline,
           onComplete: handleScriptComplete,
           onExpand: () => expandNode("script"),
@@ -156,51 +184,134 @@ function WorkflowCanvas() {
     ]
   );
 
-  // References node completion handler
-  const handleReferencesComplete = useCallback(
-    (selectedVideos: VideoInfo[]) => {
-      // Use ref to get latest state (avoids stale closure)
+  // Handle continuing to Outline
+  const handleContinueToOutline = useCallback(
+    (uploadedSources: Source[]) => {
       const currentState = stateRef.current;
 
-      console.log(
-        "handleReferencesComplete called with",
-        selectedVideos.length,
-        "videos"
-      );
-      console.log("Using state from ref:", {
-        topic: currentState.generationState.topic,
-        format: currentState.generationState.format,
-      });
+      // Collect all sources
+      const allSources: Source[] = [];
 
-      updateGenerationState({ selectedVideos });
-      completeNode("references", { videos: selectedVideos });
+      // Add YouTube videos as sources
+      const selectedVideos = currentState.generationState.selectedVideos || [];
+      const youtubeSources: Source[] = selectedVideos.map((video) => ({
+        id: video.video_id,
+        type: SourceType.YOUTUBE,
+        name: video.title,
+        thumbnail_url: video.thumbnail_url,
+        metadata: {
+          video_id: video.video_id,
+          channel_name: video.channel_name,
+          duration: video.duration,
+          view_count: video.view_count,
+          published_at: video.published_at,
+        },
+      }));
+      allSources.push(...youtubeSources);
+
+      // Add additional uploaded sources from the AddSourceNode
+      allSources.push(...uploadedSources);
+
+      console.log(
+        "Continuing to Outline with",
+        allSources.length,
+        "total sources"
+      );
+
+      updateGenerationState({ sources: allSources });
+
+      // Mark addSource node as completed
+      completeNode("addSource", { sources: uploadedSources });
+
+      // Calculate average Y position for outline node
+      const currentNodes = stateRef.current.nodes;
+      const sourceNodes = currentNodes.filter(
+        (n: any) => n.id === "references" || n.id === "addSource"
+      );
+      const avgY =
+        sourceNodes.length > 0
+          ? sourceNodes.reduce((sum: number, n: any) => sum + n.position.y, 0) /
+            sourceNodes.length
+          : 300;
 
       // Add Outline node
       addNode(
         "outline",
-        { x: 800, y: 200 },
+        { x: 800, y: avgY },
         {
           label: "Analysis & Outline",
           isExpanded: true,
           isCompleted: false,
           isLoading: false,
           topic: currentState.generationState.topic,
-          format: currentState.generationState.format || PodcastFormat.SINGLE_HOST,
+          format:
+            currentState.generationState.format || PodcastFormat.SINGLE_HOST,
           videos: selectedVideos,
+          sources: allSources,
           onComplete: handleOutlineComplete,
           onExpand: () => expandNode("outline"),
           onCollapse: () => collapseNode("outline"),
         }
       );
+
+      // Add edges from source nodes to outline
+      addEdge("references", "outline");
+      addEdge("addSource", "outline");
     },
     [
       updateGenerationState,
       completeNode,
       addNode,
+      addEdge,
       expandNode,
       collapseNode,
       handleOutlineComplete,
     ]
+  );
+
+  // Update refs when handlers change
+  useEffect(() => {
+    handleContinueToOutlineRef.current = handleContinueToOutline;
+  }, [handleContinueToOutline]);
+
+  // References node completion handler (YouTube videos)
+  const handleReferencesComplete = useCallback(
+    (selectedVideos: VideoInfo[]) => {
+      console.log(
+        "handleReferencesComplete called with",
+        selectedVideos.length,
+        "videos"
+      );
+
+      updateGenerationState({ selectedVideos });
+      completeNode("references", { videos: selectedVideos });
+
+      // Check if addSource node already exists to prevent duplicate edges
+      const currentNodes = stateRef.current.nodes;
+      const addSourceExists = currentNodes.some((n) => n.id === "addSource");
+
+      // Add the AddSource node connected from Topic
+      // Use wrapper function that calls ref to avoid circular dependencies
+      addNode(
+        "addSource",
+        { x: 450, y: 450 },
+        {
+          label: "Add Sources",
+          isExpanded: true,
+          isCompleted: false,
+          isLoading: false,
+          onContinue: (sources: Source[]) =>
+            handleContinueToOutlineRef.current(sources),
+        },
+        true // Skip automatic edge from references to addSource
+      );
+
+      // Only add edge if the node didn't already exist
+      if (!addSourceExists) {
+        addEdge("topic", "addSource");
+      }
+    },
+    [updateGenerationState, completeNode, addNode, addEdge]
   );
 
   // Topic node completion handler
@@ -211,7 +322,7 @@ function WorkflowCanvas() {
       completeNode("topic", { topic, format });
 
       console.log("Adding references node with handleReferencesComplete");
-      // Add References node
+      // Add References node (YouTube)
       addNode(
         "references",
         { x: 450, y: 200 },
@@ -221,7 +332,7 @@ function WorkflowCanvas() {
           isCompleted: false,
           isLoading: false,
           topic,
-          format, // Pass format along too
+          format,
           onComplete: handleReferencesComplete,
           onExpand: () => expandNode("references"),
           onCollapse: () => collapseNode("references"),
@@ -303,6 +414,11 @@ function WorkflowCanvas() {
             const colors: Record<string, string> = {
               topicNode: "#3b82f6",
               referencesNode: "#8b5cf6",
+              "pdf-sourceNode": "#3b82f6",
+              "image-sourceNode": "#10b981",
+              "audio-sourceNode": "#a855f7",
+              "video-sourceNode": "#f97316",
+              addSourceNode: "#6366f1",
               outlineNode: "#14b8a6",
               scriptNode: "#f97316",
               audioNode: "#10b981",
@@ -328,39 +444,42 @@ function WorkflowCanvas() {
         <Panel position="top-right" className="m-4">
           <div className="bg-gray-800 rounded-lg shadow-lg p-3 border border-gray-700">
             <div className="flex gap-2">
-              {["Topic", "References", "Outline", "Script", "Audio"].map(
-                (label, idx) => {
-                  const nodeId = label.toLowerCase();
-                  const node = nodes.find((n: any) => n.id === nodeId);
-                  const isCompleted = node?.data.isCompleted;
-                  const isActive = node && !isCompleted;
+              {[
+                { label: "Topic", id: "topic" },
+                { label: "References", id: "references" },
+                { label: "Outline", id: "outline" },
+                { label: "Script", id: "script" },
+                { label: "Audio", id: "audio" },
+              ].map((step, idx) => {
+                const node = nodes.find((n: any) => n.id === step.id);
+                const isCompleted = node?.data.isCompleted;
+                const isActive = node && !isCompleted;
 
-                  return (
+                return (
+                  <div
+                    key={step.id}
+                    className="flex flex-col items-center gap-1"
+                  >
                     <div
-                      key={label}
-                      className="flex flex-col items-center gap-1"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                        isCompleted
+                          ? "bg-green-500 text-white"
+                          : isActive
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-600 text-gray-300"
+                      }`}
                     >
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                          isCompleted
-                            ? "bg-green-500 text-white"
-                            : isActive
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-600 text-gray-300"
-                        }`}
-                      >
-                        {idx + 1}
-                      </div>
-                      <span className="text-xs text-gray-300">{label}</span>
-                </div>
-                  );
-                }
-              )}
+                      {idx + 1}
+                    </div>
+                    <span className="text-xs text-gray-300">{step.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </Panel>
       </ReactFlow>
-        </div>
+    </div>
   );
 }
 
