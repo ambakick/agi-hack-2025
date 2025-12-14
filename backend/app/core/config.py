@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     youtube_api_key: str
     gemini_api_key: str
     elevenlabs_api_key: str
+    graphon_api_key: str = ""
     
     # Server Configuration
     host: str = "0.0.0.0"

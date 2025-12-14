@@ -2,6 +2,7 @@
 import logging
 import json
 from typing import List, Optional
+from pathlib import Path
 import google.generativeai as genai
 from jinja2 import Template
 from app.models.schemas import (
@@ -13,10 +14,17 @@ from app.models.schemas import (
     ScriptResponse,
     ScriptSegment,
     PodcastFormat,
+    Source,
+    SourceType,
+    GraphContext,
+    GraphEntity,
+    GraphRelation,
+    GraphCitation,
 )
 from app.prompts.analysis import ANALYSIS_PROMPT
 from app.prompts.outline import OUTLINE_PROMPT
 from app.prompts.script import SCRIPT_SINGLE_HOST_PROMPT, SCRIPT_MULTI_HOST_PROMPT
+from app.prompts.graphon import GRAPHON_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +108,8 @@ class GeminiService:
         analysis: AnalysisResponse,
         topic: str,
         format: PodcastFormat,
-        target_duration_minutes: int = 15
+        target_duration_minutes: int = 15,
+        graph_context: Optional[GraphContext] = None,
     ) -> OutlineResponse:
         """
         Generate podcast episode outline.
@@ -123,7 +132,8 @@ class GeminiService:
                 target_duration_minutes=target_duration_minutes,
                 themes=[t.dict() for t in analysis.themes],
                 key_anecdotes=analysis.key_anecdotes,
-                summary=analysis.summary
+                summary=analysis.summary,
+                graph_context=graph_context.dict() if graph_context else None,
             )
             
             # Generate response
@@ -146,6 +156,98 @@ class GeminiService:
             
         except Exception as e:
             logger.error(f"Error generating outline: {str(e)}")
+            raise
+
+    async def build_graph_context(
+        self,
+        topic: str,
+        sources: List[Source],
+        max_sources: int = 4,
+    ) -> GraphContext:
+        """
+        Build a compact knowledge-graph context ("Graphon") from uploaded sources.
+
+        This uses Gemini with file inputs to extract entities/relations with citations.
+        """
+        try:
+            # Filter to non-YouTube sources with file paths
+            file_sources = [
+                s for s in sources
+                if s.type != SourceType.YOUTUBE and s.file_path
+            ][:max_sources]
+
+            if not file_sources:
+                return GraphContext(summary="", entities=[], relations=[])
+
+            # Upload files to Gemini (best-effort)
+            uploaded_files = []
+            for s in file_sources:
+                path = Path(s.file_path)
+                if not path.exists():
+                    # Try resolving relative to backend working directory
+                    path = Path.cwd() / s.file_path
+                if not path.exists():
+                    logger.warning(f"Graph context source file not found: {s.file_path}")
+                    continue
+
+                try:
+                    uploaded = genai.upload_file(str(path))
+                    uploaded_files.append((s, uploaded))
+                except Exception as upload_err:
+                    logger.warning(f"Failed to upload source {s.id} to Gemini: {upload_err}")
+
+            if not uploaded_files:
+                return GraphContext(summary="", entities=[], relations=[])
+
+            template = Template(GRAPHON_PROMPT)
+            prompt = template.render(topic=topic)
+
+            # Pass prompt + files as multi-part content
+            parts = [prompt] + [uf for (_, uf) in uploaded_files]
+
+            response = self.model.generate_content(
+                parts,
+                generation_config=genai.GenerationConfig(
+                    max_output_tokens=4000,
+                    temperature=0.4,
+                ),
+            )
+            result = self._parse_json_response(response.text)
+
+            # Parse into structured schema
+            entities: List[GraphEntity] = []
+            for ent in result.get("entities", []) or []:
+                citations = [GraphCitation(**c) for c in (ent.get("citations", []) or [])]
+                entities.append(
+                    GraphEntity(
+                        name=ent.get("name", ""),
+                        type=ent.get("type", "Other"),
+                        description=ent.get("description", ""),
+                        citations=citations,
+                    )
+                )
+
+            relations: List[GraphRelation] = []
+            for rel in result.get("relations", []) or []:
+                citations = [GraphCitation(**c) for c in (rel.get("citations", []) or [])]
+                relations.append(
+                    GraphRelation(
+                        source=rel.get("source", ""),
+                        target=rel.get("target", ""),
+                        type=rel.get("type", ""),
+                        description=rel.get("description"),
+                        citations=citations,
+                    )
+                )
+
+            return GraphContext(
+                summary=result.get("summary", "") or "",
+                entities=entities,
+                relations=relations,
+            )
+
+        except Exception as e:
+            logger.error(f"Error building graph context: {str(e)}")
             raise
     
     async def generate_script(

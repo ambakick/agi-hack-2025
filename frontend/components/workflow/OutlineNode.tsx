@@ -6,7 +6,7 @@ import { NodeProps } from "reactflow";
 import { NodeWrapper } from "./NodeWrapper";
 import { Button } from "@/components/ui/button";
 import { WorkflowNodeData } from "@/lib/workflowState";
-import { getTranscripts, analyzeContent, generateOutline } from "@/lib/api";
+import { getTranscripts, analyzeContent, buildGraphContext, generateOutline } from "@/lib/api";
 import type {
   VideoInfo,
   VideoTranscript,
@@ -14,6 +14,8 @@ import type {
   OutlineResponse,
   PodcastFormat,
   OutlineSection,
+  GraphContext,
+  Source,
 } from "@/lib/types";
 import { FileText, Clock, Loader2, Eye, X } from "lucide-react";
 
@@ -43,7 +45,7 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
   });
 
   const [stage, setStage] = useState<
-    "idle" | "transcripts" | "analysis" | "outline" | "done"
+    "idle" | "transcripts" | "analysis" | "graphon" | "outline" | "done"
   >("idle");
   const [transcripts, setTranscripts] = useState<VideoTranscript[]>(
     data.transcripts || []
@@ -54,6 +56,7 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
   const [outline, setOutline] = useState<OutlineResponse | null>(
     data.outline || null
   );
+  const [graphContext, setGraphContext] = useState<GraphContext | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -90,13 +93,24 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
       );
       setAnalysis(analysisResults);
 
+      // Build Graphon context from additional uploaded sources (non-YouTube)
+      const allSources = (data as any).sources as Source[] | undefined;
+      const extraSources = (allSources || []).filter((s) => s.type !== "youtube");
+      let graphonCtx: GraphContext | undefined;
+      if (extraSources.length > 0) {
+        setStage("graphon");
+        graphonCtx = await buildGraphContext(data.topic, extraSources);
+        setGraphContext(graphonCtx);
+      }
+
       // Generate outline
       setStage("outline");
       const outlineResults = await generateOutline(
         analysisResults,
         data.topic,
         data.format,
-        15
+        15,
+        graphonCtx
       );
       setOutline(outlineResults);
 
@@ -144,6 +158,7 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
     : "Generate outline";
 
   const isLoading = ["transcripts", "analysis", "outline"].includes(stage);
+  const isLoadingWithGraph = ["transcripts", "analysis", "graphon", "outline"].includes(stage);
 
   return (
     <NodeWrapper
@@ -154,18 +169,19 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
       color="#14b8a6"
       isExpanded={data.isExpanded}
       isCompleted={data.isCompleted}
-      isLoading={data.isLoading || isLoading}
+      isLoading={data.isLoading || isLoadingWithGraph}
       error={data.error || error}
       onExpand={data.onExpand}
       onCollapse={data.onCollapse}
     >
-      {isLoading ? (
+      {isLoadingWithGraph ? (
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-3" />
             <p className="text-sm font-medium text-gray-200 mb-1">
               {stage === "transcripts" && "Fetching video transcripts..."}
               {stage === "analysis" && "Analyzing content with Gemini..."}
+              {stage === "graphon" && "Building Graphon knowledge graph..."}
               {stage === "outline" && "Generating episode outline..."}
             </p>
             <p className="text-xs text-gray-400">This may take a minute</p>

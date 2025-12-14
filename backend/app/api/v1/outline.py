@@ -32,7 +32,8 @@ async def generate_outline(
             analysis=request.analysis,
             topic=request.topic,
             format=request.format,
-            target_duration_minutes=request.target_duration_minutes
+            target_duration_minutes=request.target_duration_minutes,
+            graph_context=request.graph_context,
         )
         
         return outline

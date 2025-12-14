@@ -34,6 +34,35 @@ export interface Source {
   };
 }
 
+// Graphon (Knowledge Graph) Types
+export interface GraphCitation {
+  source_id: string;
+  source_name?: string;
+  location?: string;
+  quote?: string;
+}
+
+export interface GraphEntity {
+  name: string;
+  type: string;
+  description: string;
+  citations: GraphCitation[];
+}
+
+export interface GraphRelation {
+  source: string;
+  target: string;
+  type: string;
+  description?: string;
+  citations: GraphCitation[];
+}
+
+export interface GraphContext {
+  summary: string;
+  entities: GraphEntity[];
+  relations: GraphRelation[];
+}
+
 // Video Discovery Types
 export interface VideoInfo {
   video_id: string;

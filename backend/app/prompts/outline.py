@@ -23,6 +23,21 @@ OUTLINE_PROMPT = """You are an expert podcast producer. Create a structured outl
 
 **Summary**: {{ summary }}
 
+{% if graph_context %}
+**Additional Sources (Graphon Entities & Relations)**:
+{{ graph_context.summary }}
+
+Key Entities:
+{% for e in graph_context.entities %}
+- {{ e.name }} ({{ e.type }}): {{ e.description }}
+{% endfor %}
+
+Key Relations:
+{% for r in graph_context.relations %}
+- {{ r.source }} --({{ r.type }})--> {{ r.target }}{% if r.description %}: {{ r.description }}{% endif %}
+{% endfor %}
+{% endif %}
+
 **Your Task**:
 Create a detailed outline with 4-6 sections. Each section should:
 1. Have a clear, engaging title

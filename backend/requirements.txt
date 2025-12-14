@@ -28,6 +28,10 @@ elevenlabs>=1.0.0
 # Template Engine
 jinja2>=3.1.0
 
+# Graphon (knowledge graph from files)
+graphon-client>=0.1.0
+python-jose[cryptography]>=3.3.0
+
 # Video Processing
 moviepy>=1.0.3
 imageio-ffmpeg>=0.4.9

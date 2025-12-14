@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 from app.core.config import settings
-from app.api.v1 import discovery, transcripts, analysis, outline, script, tts, video, upload
+from app.api.v1 import discovery, transcripts, analysis, outline, script, tts, video, upload, graphon
 from app.api.v1.endpoints import cache as cache_endpoints
 
 # Create FastAPI app
@@ -34,6 +34,7 @@ app.include_router(script.router, prefix="/api/v1", tags=["script"])
 app.include_router(tts.router, prefix="/api/v1", tags=["tts"])
 app.include_router(video.router, prefix="/api/v1", tags=["video"])
 app.include_router(upload.router, prefix="/api/v1", tags=["upload"])
+app.include_router(graphon.router, prefix="/api/v1", tags=["graphon"])
 app.include_router(cache_endpoints.router, prefix="/api/v1/cache", tags=["cache"])
 
 # Mount static file directories for video and audio output

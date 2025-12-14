@@ -21,6 +21,7 @@ import type {
   SceneDescription,
   Source,
   SourceType,
+  GraphContext,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -82,13 +83,24 @@ export async function generateOutline(
   analysis: AnalysisResponse,
   topic: string,
   format: PodcastFormat,
-  targetDuration: number
+  targetDuration: number,
+  graphContext?: GraphContext
 ): Promise<OutlineResponse> {
   const response = await api.post('/outline', {
     analysis,
     topic,
     format,
     target_duration_minutes: targetDuration,
+    graph_context: graphContext,
+  });
+  return response.data;
+}
+
+// Graphon API
+export async function buildGraphContext(topic: string, sources: Source[]): Promise<GraphContext> {
+  const response = await api.post('/graphon/context', {
+    topic,
+    sources,
   });
   return response.data;
 }

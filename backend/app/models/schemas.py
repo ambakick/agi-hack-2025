@@ -117,6 +117,46 @@ class AnalysisResponse(BaseModel):
     summary: str
 
 
+# --- Graphon / Knowledge Graph Context Schemas ---
+
+class GraphCitation(BaseModel):
+    """Evidence for an entity/relation from a specific source."""
+    source_id: str
+    source_name: Optional[str] = None
+    location: Optional[str] = None  # e.g., page number, timestamp
+    quote: Optional[str] = None
+
+
+class GraphEntity(BaseModel):
+    """Entity extracted into the knowledge graph."""
+    name: str
+    type: str
+    description: str
+    citations: List[GraphCitation] = Field(default_factory=list)
+
+
+class GraphRelation(BaseModel):
+    """Relationship between two entities."""
+    source: str
+    target: str
+    type: str
+    description: Optional[str] = None
+    citations: List[GraphCitation] = Field(default_factory=list)
+
+
+class GraphContext(BaseModel):
+    """Compact summary of the Graphon knowledge graph for prompting."""
+    summary: str = ""
+    entities: List[GraphEntity] = Field(default_factory=list)
+    relations: List[GraphRelation] = Field(default_factory=list)
+
+
+class GraphContextRequest(BaseModel):
+    """Request to build Graphon context from uploaded sources."""
+    topic: str
+    sources: List[Source] = Field(default_factory=list, description="Non-YouTube sources to ingest")
+
+
 class OutlineSection(BaseModel):
     """A section in the podcast outline."""
     id: str
@@ -132,6 +172,10 @@ class OutlineRequest(BaseModel):
     topic: str
     format: PodcastFormat = PodcastFormat.SINGLE_HOST
     target_duration_minutes: int = Field(default=15, ge=5, le=60)
+    graph_context: Optional[GraphContext] = Field(
+        default=None,
+        description="Optional Graphon-derived entity/relationship context from additional sources"
+    )
 
 
 class OutlineResponse(BaseModel):
