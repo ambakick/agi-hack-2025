@@ -32,11 +32,7 @@ export function AudioNode({ id, data }: AudioNodeProps) {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (data.isExpanded && !audioUrl && data.script) {
-      generateAudio();
-    }
-  }, [data.isExpanded]);
+  // Removed auto-generation - now both audio and video only generate on button click
 
   useEffect(() => {
     return () => {
