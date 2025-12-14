@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { NodeProps } from "reactflow";
 import { NodeWrapper } from "./NodeWrapper";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import type {
   PodcastFormat,
   OutlineSection,
 } from "@/lib/types";
-import { FileText, Clock, Loader2 } from "lucide-react";
+import { FileText, Clock, Loader2, Eye, X } from "lucide-react";
 
 interface OutlineNodeProps extends NodeProps {
   data: WorkflowNodeData & {
@@ -54,44 +55,12 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
     data.outline || null
   );
   const [error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    console.log("OutlineNode useEffect triggered", {
-      isExpanded: data.isExpanded,
-      stage,
-      hasVideos: !!data.videos,
-      videosCount: data.videos?.length,
-      topic: data.topic,
-      format: data.format,
-    });
-
-    // Auto-start processing when node is expanded and has all required data
-    if (
-      data.isExpanded &&
-      stage === "idle" &&
-      data.videos &&
-      data.videos.length > 0 &&
-      data.topic &&
-      data.format
-    ) {
-      console.log("Starting processOutline automatically...");
-      processOutline();
-    }
-  }, [data.isExpanded, data.videos, data.topic, data.format]);
-
-  // Separate effect to start processing when stage becomes idle with all data
-  useEffect(() => {
-    if (
-      stage === "idle" &&
-      data.isExpanded &&
-      data.videos?.length &&
-      data.topic &&
-      data.format
-    ) {
-      console.log("Re-triggering processOutline due to stage change");
-      processOutline();
-    }
-  }, [stage]);
+    setMounted(true);
+  }, []);
 
   const processOutline = async () => {
     console.log("processOutline called");
@@ -139,6 +108,31 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
     }
   };
 
+  // Single useEffect to auto-start processing when node is expanded with required data
+  useEffect(() => {
+    console.log("OutlineNode useEffect triggered", {
+      isExpanded: data.isExpanded,
+      stage,
+      hasVideos: !!data.videos,
+      videosCount: data.videos?.length,
+      topic: data.topic,
+      format: data.format,
+    });
+
+    // Auto-start processing when node is expanded and has all required data
+    if (
+      data.isExpanded &&
+      stage === "idle" &&
+      data.videos &&
+      data.videos.length > 0 &&
+      data.topic &&
+      data.format
+    ) {
+      console.log("Starting processOutline automatically...");
+      processOutline();
+    }
+  }, [data.isExpanded, data.videos, data.topic, data.format, stage]);
+
   const handleNext = () => {
     if (transcripts && analysis && outline && data.onComplete) {
       data.onComplete(transcripts, analysis, outline);
@@ -178,66 +172,130 @@ export function OutlineNode({ id, data }: OutlineNodeProps) {
           </div>
         </div>
       ) : stage === "done" && analysis && outline ? (
-        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-          {/* Analysis Summary */}
-          <div className="bg-teal-900/30 rounded-lg p-3 border border-teal-700">
+        <div className="space-y-3">
+          {/* Preview Card */}
+          <div className="bg-teal-900/20 rounded-lg p-4 border border-teal-700/50">
             <h4 className="font-semibold text-sm mb-2 text-teal-300">
-              Content Analysis
+              Content Analysis Complete
             </h4>
-            <p className="text-xs text-gray-300 mb-3">{analysis.summary}</p>
-            <div>
-              <p className="text-xs font-medium text-teal-400 mb-1">
-                Key Themes:
-              </p>
-              <ul className="space-y-1">
-                {analysis.themes.slice(0, 3).map((theme, idx) => (
-                  <li key={idx} className="text-xs text-gray-400">
-                    <span className="font-medium">{theme.theme}:</span>{" "}
-                    {theme.description}
-                  </li>
-                ))}
-              </ul>
+            <p className="text-xs text-gray-400 mb-3 line-clamp-2">
+              {analysis.summary}
+            </p>
+            <div className="flex items-center justify-between text-xs text-gray-300">
+              <span>{analysis.themes.length} themes identified</span>
+              <span>{outline.sections.length} sections • {outline.total_duration_minutes} min</span>
             </div>
           </div>
 
-          {/* Outline Sections */}
-          <div>
-            <h4 className="font-semibold text-sm mb-2 text-white">
-              Episode Outline ({outline.total_duration_minutes} minutes)
-            </h4>
-            <div className="space-y-2">
-              {outline.sections.map((section: OutlineSection, idx) => (
-                <div
-                  key={section.id}
-                  className="border border-gray-600 rounded-lg p-3 bg-gray-700"
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <h5 className="font-medium text-sm text-white">
-                      {idx + 1}. {section.title}
-                    </h5>
-                    <div className="flex items-center text-xs text-gray-400">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {section.duration_minutes}m
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-300 mb-2">
-                    {section.description}
-                  </p>
-                  <ul className="text-xs text-gray-400 list-disc list-inside space-y-0.5">
-                    {section.key_points.slice(0, 2).map((point, pidx) => (
-                      <li key={pidx}>{point}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <Button onClick={handleNext} size="lg">
-              Generate Script
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowModal(true)} 
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              View Full Details
+            </Button>
+            <Button onClick={handleNext} size="sm" className="flex-1">
+              Generate Script →
             </Button>
           </div>
+
+          {/* Modal rendered via Portal */}
+          {mounted && showModal && createPortal(
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowModal(false)}>
+              <div className="bg-gray-800 rounded-xl border border-gray-700 w-[90vw] max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-900/50">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-teal-400" />
+                    <h3 className="font-semibold text-lg text-white">Analysis & Outline</h3>
+                  </div>
+                  <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white transition">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 overflow-y-auto max-h-[calc(85vh-80px)]">
+                  {/* Analysis Section */}
+                  <div className="mb-6">
+                    <div className="bg-teal-900/30 rounded-lg p-4 border border-teal-700">
+                      <h4 className="font-semibold text-base mb-3 text-teal-300">
+                        Content Analysis
+                      </h4>
+                      <p className="text-sm text-gray-300 mb-4">{analysis.summary}</p>
+                      <div>
+                        <p className="text-sm font-medium text-teal-400 mb-2">
+                          Key Themes:
+                        </p>
+                        <ul className="space-y-2">
+                          {analysis.themes.map((theme, idx) => (
+                            <li key={idx} className="text-sm text-gray-300 pl-4 border-l-2 border-teal-600">
+                              <span className="font-medium text-teal-400">{theme.theme}:</span>{" "}
+                              {theme.description}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Outline Section */}
+                  <div>
+                    <h4 className="font-semibold text-base mb-3 text-white flex items-center gap-2">
+                      Episode Outline
+                      <span className="text-sm font-normal text-gray-400">
+                        ({outline.total_duration_minutes} minutes)
+                      </span>
+                    </h4>
+                    <div className="space-y-3">
+                      {outline.sections.map((section: OutlineSection, idx) => (
+                        <div
+                          key={section.id}
+                          className="border border-gray-600 rounded-lg p-4 bg-gray-700/50 hover:bg-gray-700 transition"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h5 className="font-medium text-base text-white">
+                              {idx + 1}. {section.title}
+                            </h5>
+                            <div className="flex items-center text-sm text-gray-400">
+                              <Clock className="w-4 h-4 mr-1" />
+                              {section.duration_minutes}m
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-300 mb-3">
+                            {section.description}
+                          </p>
+                          <ul className="text-sm text-gray-400 space-y-1">
+                            {section.key_points.map((point, pidx) => (
+                              <li key={pidx} className="flex items-start gap-2">
+                                <span className="text-teal-500 mt-1">•</span>
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-700 bg-gray-900/50">
+                  <Button onClick={() => setShowModal(false)} variant="outline" size="sm">
+                    Close
+                  </Button>
+                  <Button onClick={() => { setShowModal(false); handleNext(); }} size="sm">
+                    Generate Script →
+                  </Button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
         </div>
       ) : error ? (
         <div className="text-center py-8">

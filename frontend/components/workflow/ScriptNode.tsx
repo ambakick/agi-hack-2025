@@ -143,7 +143,7 @@ export function ScriptNode({ id, data }: ScriptNodeProps) {
 
           <div className="flex justify-end pt-2">
             <Button onClick={handleNext} size="lg">
-              Generate Audio
+              Generate Media (Audio/Video) →
             </Button>
           </div>
         </div>

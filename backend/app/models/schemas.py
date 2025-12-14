@@ -6,8 +6,8 @@ from enum import Enum
 
 class PodcastFormat(str, Enum):
     """Podcast format options."""
-    SINGLE_HOST = "single_host"
-    MULTI_HOST = "multi_host"
+    SINGLE_HOST = "single"
+    TWO_HOSTS = "two_hosts"
 
 
 class VideoInfo(BaseModel):

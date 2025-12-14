@@ -169,7 +169,7 @@ class GeminiService:
         """
         try:
             # Choose appropriate prompt template
-            if format == PodcastFormat.MULTI_HOST:
+            if format == PodcastFormat.TWO_HOSTS:
                 template = Template(SCRIPT_MULTI_HOST_PROMPT)
             else:
                 template = Template(SCRIPT_SINGLE_HOST_PROMPT)

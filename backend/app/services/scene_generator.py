@@ -32,10 +32,27 @@ class SceneGenerator:
             json_str = response_text.strip()
         
         try:
-            return json.loads(json_str)
+            parsed = json.loads(json_str)
+            return parsed
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON: {e}\nResponse: {json_str[:500]}")
-            raise ValueError(f"Invalid JSON response from model: {str(e)}")
+            
+            # Try to fix common JSON issues
+            try:
+                # Attempt to fix unterminated strings by adding closing quotes and brackets
+                if json_str.count('"') % 2 != 0:
+                    logger.warning("Attempting to fix unterminated string in JSON")
+                    json_str = json_str + '"'
+                if json_str.count('[') > json_str.count(']'):
+                    json_str = json_str + ']'
+                if json_str.count('{') > json_str.count('}'):
+                    json_str = json_str + '}'
+                
+                parsed = json.loads(json_str)
+                logger.info("Successfully recovered from malformed JSON")
+                return parsed
+            except:
+                raise ValueError(f"Invalid JSON response from model: {str(e)}")
     
     async def generate_scenes(
         self,

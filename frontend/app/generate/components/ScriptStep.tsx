@@ -94,7 +94,7 @@ export function ScriptStep({
               <div>
                 <CardTitle>Podcast Script</CardTitle>
                 <CardDescription>
-                  {format === PodcastFormat.MULTI_HOST
+                  {format === PodcastFormat.TWO_HOSTS
                     ? "Conversational script with two hosts"
                     : "Single narrator script"}
                 </CardDescription>
@@ -106,7 +106,7 @@ export function ScriptStep({
           </CardHeader>
           <CardContent>
             <div className="bg-gray-50 rounded-lg p-6 max-h-96 overflow-y-auto">
-              {format === PodcastFormat.MULTI_HOST ? (
+              {format === PodcastFormat.TWO_HOSTS ? (
                 <div className="space-y-4">
                   {script.segments.map((segment, idx) => (
                     <div key={idx} className="flex gap-3">

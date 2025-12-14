@@ -96,12 +96,12 @@ function WorkflowCanvas() {
       updateGenerationState({ script });
       completeNode("script", { script });
 
-      // Add Audio node
+      // Add Media node (Audio/Video)
       addNode(
         "audio",
         { x: 1500, y: 200 },
         {
-          label: "Podcast Audio",
+          label: "Podcast Media",
           isExpanded: true,
           isCompleted: false,
           isLoading: false,
@@ -117,10 +117,10 @@ function WorkflowCanvas() {
   // Outline node completion handler
   const handleOutlineComplete = useCallback(
     (
-      transcripts: VideoTranscript[],
-      analysis: AnalysisResponse,
-      outline: OutlineResponse
-    ) => {
+    transcripts: VideoTranscript[],
+    analysis: AnalysisResponse,
+    outline: OutlineResponse
+  ) => {
       // Use ref to get latest state (avoids stale closure)
       const currentState = stateRef.current;
 
@@ -137,8 +137,8 @@ function WorkflowCanvas() {
           isExpanded: true,
           isCompleted: false,
           isLoading: false,
-          topic: currentState.topic,
-          format: currentState.format || PodcastFormat.SINGLE_HOST,
+          topic: currentState.generationState.topic,
+          format: currentState.generationState.format || PodcastFormat.SINGLE_HOST,
           outline,
           onComplete: handleScriptComplete,
           onExpand: () => expandNode("script"),
@@ -168,8 +168,8 @@ function WorkflowCanvas() {
         "videos"
       );
       console.log("Using state from ref:", {
-        topic: currentState.topic,
-        format: currentState.format,
+        topic: currentState.generationState.topic,
+        format: currentState.generationState.format,
       });
 
       updateGenerationState({ selectedVideos });
@@ -184,8 +184,8 @@ function WorkflowCanvas() {
           isExpanded: true,
           isCompleted: false,
           isLoading: false,
-          topic: currentState.topic,
-          format: currentState.format || PodcastFormat.SINGLE_HOST,
+          topic: currentState.generationState.topic,
+          format: currentState.generationState.format || PodcastFormat.SINGLE_HOST,
           videos: selectedVideos,
           onComplete: handleOutlineComplete,
           onExpand: () => expandNode("outline"),
@@ -352,7 +352,7 @@ function WorkflowCanvas() {
                         {idx + 1}
                       </div>
                       <span className="text-xs text-gray-300">{label}</span>
-                    </div>
+                </div>
                   );
                 }
               )}
@@ -360,7 +360,7 @@ function WorkflowCanvas() {
           </div>
         </Panel>
       </ReactFlow>
-    </div>
+        </div>
   );
 }
 

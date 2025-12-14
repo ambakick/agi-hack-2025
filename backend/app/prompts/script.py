@@ -40,7 +40,7 @@ Key Points:
       "timestamp_seconds": 0.0
     }
   ],
-  "format": "single_host",
+  "format": "single",
   "total_duration_seconds": 900.0,
   "full_script": "Complete script as a single text..."
 }
@@ -102,7 +102,7 @@ HOST_1: "Same here! So where should we start?"
       "timestamp_seconds": 5.5
     }
   ],
-  "format": "multi_host",
+  "format": "two_hosts",
   "total_duration_seconds": 900.0,
   "full_script": "Complete script as a single text with speaker labels..."
 }

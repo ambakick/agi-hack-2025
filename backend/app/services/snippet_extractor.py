@@ -42,10 +42,27 @@ class SnippetExtractor:
             json_str = response_text.strip()
         
         try:
-            return json.loads(json_str)
+            parsed = json.loads(json_str)
+            return parsed
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON: {e}\nResponse: {json_str[:500]}")
-            raise ValueError(f"Invalid JSON response from model: {str(e)}")
+            
+            # Try to fix common JSON issues
+            try:
+                # Attempt to fix unterminated strings by adding closing quotes and brackets
+                if json_str.count('"') % 2 != 0:
+                    logger.warning("Attempting to fix unterminated string in JSON")
+                    json_str = json_str + '"'
+                if json_str.count('[') > json_str.count(']'):
+                    json_str = json_str + ']'
+                if json_str.count('{') > json_str.count('}'):
+                    json_str = json_str + '}'
+                
+                parsed = json.loads(json_str)
+                logger.info("Successfully recovered from malformed JSON")
+                return parsed
+            except:
+                raise ValueError(f"Invalid JSON response from model: {str(e)}")
     
     async def extract_snippets(
         self,
@@ -86,7 +103,7 @@ OUTPUT FORMAT (JSON):
 {{
   "snippets": [
     {{
-      "text": "exact transcript text",
+      "text": "exact transcript text (keep quotes escaped)",
       "start_time": 0.0,
       "end_time": 8.0,
       "context": "brief context about this snippet",
@@ -95,14 +112,20 @@ OUTPUT FORMAT (JSON):
   ]
 }}
 
-Return ONLY valid JSON, no additional text.
+IMPORTANT:
+- Return ONLY valid JSON
+- Escape quotes in text fields properly
+- Do not truncate strings
+- Complete all JSON objects fully
 """
             
+            # Use response schema to ensure valid JSON
             response = self.model.generate_content(
                 prompt,
                 generation_config=genai.GenerationConfig(
                     temperature=0.7,
-                    max_output_tokens=4000,
+                    max_output_tokens=8000,  # Increased to avoid truncation
+                    response_mime_type="application/json",
                 )
             )
             

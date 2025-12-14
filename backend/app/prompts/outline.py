@@ -3,7 +3,7 @@
 OUTLINE_PROMPT = """You are an expert podcast producer. Create a structured outline for a {{ target_duration_minutes }}-minute podcast episode on the topic "{{ topic }}".
 
 **Podcast Format**: {{ format }}
-{% if format == "multi_host" %}
+{% if format == "two_hosts" %}
 (This will be a conversational podcast with two hosts)
 {% else %}
 (This will be narrated by a single host)
@@ -34,7 +34,7 @@ The outline should:
 - Start with an engaging introduction (1-2 minutes)
 - Flow logically through the main topics
 - Include interesting stories/anecdotes at appropriate points
-{% if format == "multi_host" %}
+{% if format == "two_hosts" %}
 - Create opportunities for conversational back-and-forth between hosts
 {% endif %}
 - End with a memorable conclusion (1-2 minutes)

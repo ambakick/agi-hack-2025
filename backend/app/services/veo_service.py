@@ -19,9 +19,21 @@ class VeoService:
     
     def __init__(self, api_key: str):
         """Initialize Veo service with API key."""
-        self.client = genai.Client(api_key=api_key)
-        self.model_name = "veo-3.1-generate-preview"
-        self.output_dir = settings.video_output_dir
+        try:
+            self.client = genai.Client(api_key=api_key)
+            self.model_name = "veo-3.1-generate-preview"
+            self.output_dir = settings.video_output_dir
+            logger.info(f"VeoService initialized with model: {self.model_name}")
+            
+            # Test API access
+            try:
+                models = self.client.models.list()
+                logger.info(f"API client initialized successfully. Available models: {len(list(models))}")
+            except Exception as e:
+                logger.warning(f"Could not list models (this may be normal): {str(e)}")
+        except Exception as e:
+            logger.error(f"Failed to initialize Veo client: {str(e)}")
+            raise
     
     def _poll_operation(self, operation, max_wait_time: int = 600) -> genai.types.Operation:
         """
@@ -45,6 +57,13 @@ class VeoService:
             logger.info(f"Waiting for video generation... ({elapsed:.0f}s elapsed)")
             time.sleep(poll_interval)
             operation = self.client.operations.get(operation)
+        
+        logger.info(f"Operation completed after {time.time() - start_time:.1f}s")
+        
+        # Check if operation has an error
+        if hasattr(operation, 'error') and operation.error:
+            logger.error(f"Operation completed with error: {operation.error}")
+            raise RuntimeError(f"Video generation failed: {operation.error}")
         
         return operation
     
@@ -77,13 +96,30 @@ class VeoService:
             GenAI file reference to the generated video
         """
         try:
-            if not operation.response or not hasattr(operation.response, 'generated_videos'):
+            logger.info(f"Operation done: {operation.done}")
+            logger.info(f"Operation has response: {hasattr(operation, 'response')}")
+            
+            if not operation.response:
+                logger.error("Operation response is None or missing")
+                logger.error(f"Operation error: {operation.error if hasattr(operation, 'error') else 'No error attr'}")
+                logger.error(f"Operation metadata: {operation.metadata if hasattr(operation, 'metadata') else 'No metadata'}")
+                raise ValueError("Operation response is None")
+            
+            logger.info(f"Response type: {type(operation.response)}")
+            logger.info(f"Response has generated_videos: {hasattr(operation.response, 'generated_videos')}")
+            
+            if not hasattr(operation.response, 'generated_videos'):
+                logger.error(f"Response attributes: {dir(operation.response)}")
                 raise ValueError("Operation response does not contain generated_videos")
             
-            if not operation.response.generated_videos:
+            videos = operation.response.generated_videos
+            logger.info(f"Generated videos count: {len(videos) if videos else 0}")
+            
+            if not videos:
                 raise ValueError("No generated videos found in response")
             
-            generated_video = operation.response.generated_videos[0]
+            generated_video = videos[0]
+            logger.info(f"Video file retrieved successfully")
             return generated_video.video
             
         except Exception as e:
@@ -110,15 +146,19 @@ class VeoService:
             
             generated_video = operation.response.generated_videos[0]
             
-            # Download the video file
-            video_file = self.client.files.download(file=generated_video.video)
+            # Download the video file (returns bytes)
+            logger.info(f"Downloading video from Veo...")
+            video_bytes = self.client.files.download(file=generated_video.video)
             
-            # Save to output path
+            # Save bytes to output path
             output_file = Path(output_path)
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            video_file.save(str(output_file))
             
-            logger.info(f"Video saved to {output_path}")
+            # Write bytes directly to file
+            with open(output_file, 'wb') as f:
+                f.write(video_bytes)
+            
+            logger.info(f"Video saved to {output_path} ({len(video_bytes)} bytes)")
             return str(output_file)
             
         except Exception as e:
@@ -192,6 +232,8 @@ OUTPUT REQUIREMENT:
 """
             
             logger.info(f"Generating video for scene {scene.scene_number}...")
+            logger.info(f"Prompt length: {len(veo_prompt)} characters")
+            logger.info(f"Using model: {self.model_name}")
             
             # Prepare config for video generation
             config = types.GenerateVideosConfig(
@@ -202,28 +244,34 @@ OUTPUT REQUIREMENT:
             # Generate video (this is a blocking operation, so we run it in executor)
             loop = asyncio.get_event_loop()
             
-            # If we have a previous video file, extend from it
-            if previous_video_file:
-                logger.info(f"Extending from previous video file...")
-                operation = await loop.run_in_executor(
-                    None,
-                    lambda: self.client.models.generate_videos(
-                        model=self.model_name,
-                        video=previous_video_file,
-                        prompt=veo_prompt,
-                        config=config
+            try:
+                # If we have a previous video file, extend from it
+                if previous_video_file:
+                    logger.info(f"Extending from previous video file...")
+                    operation = await loop.run_in_executor(
+                        None,
+                        lambda: self.client.models.generate_videos(
+                            model=self.model_name,
+                            video=previous_video_file,
+                            prompt=veo_prompt,
+                            config=config
+                        )
                     )
-                )
-            else:
-                # Generate new video
-                operation = await loop.run_in_executor(
-                    None,
-                    lambda: self.client.models.generate_videos(
-                        model=self.model_name,
-                        prompt=veo_prompt,
-                        config=config
+                else:
+                    # Generate new video
+                    logger.info(f"Calling Veo API to generate new video...")
+                    operation = await loop.run_in_executor(
+                        None,
+                        lambda: self.client.models.generate_videos(
+                            model=self.model_name,
+                            prompt=veo_prompt,
+                            config=config
+                        )
                     )
-                )
+                    logger.info(f"Veo API call successful, operation created: {operation.name if hasattr(operation, 'name') else 'unknown'}")
+            except Exception as api_error:
+                logger.error(f"Veo API call failed: {type(api_error).__name__}: {str(api_error)}")
+                raise
             
             # Poll for completion
             operation = await loop.run_in_executor(
