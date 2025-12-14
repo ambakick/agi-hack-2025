@@ -10,6 +10,49 @@ class PodcastFormat(str, Enum):
     TWO_HOSTS = "two_hosts"
 
 
+class SourceType(str, Enum):
+    """Source type options for multi-modal input."""
+    YOUTUBE = "youtube"
+    IMAGE = "image"
+    AUDIO = "audio"
+    VIDEO = "video"
+    PDF = "pdf"
+
+
+class SourceMetadata(BaseModel):
+    """Metadata for a source."""
+    video_id: Optional[str] = None
+    channel_name: Optional[str] = None
+    duration: Optional[str] = None
+    view_count: Optional[int] = None
+    published_at: Optional[str] = None
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
+    page_count: Optional[int] = None
+
+
+class Source(BaseModel):
+    """Universal source model for multi-modal inputs."""
+    id: str
+    type: SourceType
+    name: str
+    thumbnail_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_url: Optional[str] = None
+    metadata: Optional[SourceMetadata] = None
+
+
+class UploadResponse(BaseModel):
+    """Response from file upload."""
+    id: str
+    type: SourceType
+    name: str
+    thumbnail_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_url: Optional[str] = None
+    metadata: Optional[SourceMetadata] = None
+
+
 class VideoInfo(BaseModel):
     """YouTube video information."""
     video_id: str
